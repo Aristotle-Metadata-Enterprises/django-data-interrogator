@@ -6,11 +6,8 @@ function addColumn(area) {
         holding_cell.count = holding_cell.count + 1
     }
 
-    var col = area.getElementsByTagName('span')[1].childNodes[0]
-
-    var new_column = col.cloneNode(true);
+    var new_column = area.getElementsByTagName('span')[1].childNodes[0].cloneNode(true);
     holding_cell.appendChild(new_column);
-    
 }
 
 function removeColumn(column) {

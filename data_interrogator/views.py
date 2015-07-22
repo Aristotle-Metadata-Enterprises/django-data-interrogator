@@ -6,6 +6,8 @@ from django.conf import settings
 from django.template.loader import get_template
 from django.template import Context
 
+from django.db.models import Count
+
 # Because of the risk of data leakage from User, Revision and Version tables,
 # If a django user hasn't explicitly set up a witness protecion program,
 # we will ban interrogators from inspecting the User table
@@ -26,10 +28,6 @@ def custom_table(request):
         # check whether it's valid:
         if form.is_valid():
             # process the data in form.cleaned_data as required
-            # ...
-            # redirect to a new URL:
-            #print "Data",form.data
-            #print "Fields:",form.fields
             app_label,model = form.cleaned_data['lead_suspect'].lower().split(':',1)
             lead_suspect = ContentType.objects.get(app_label=app_label,model=model).model_class()
             
@@ -46,26 +44,26 @@ def custom_table(request):
                     kwargs[key] = val
                 rows = rows.filter(**kwargs)
 
-            print(form.cleaned_data['columns'])
-
             cols = [col for col in form.cleaned_data['columns'] if col != ""]
-            """
-            cols = [ col for col in [
-                'pk',
-                form.cleaned_data['col1'],
-                form.cleaned_data['col2'],
-                form.cleaned_data['col3'],
-                form.cleaned_data['col4'],
-                form.cleaned_data['col5'],
-            ] if col != ""]"""
-            
-            columns = []
+
+            output_columns = []
+            query_columns = []
+            annotations = {}
             for column in cols:
                 column = column.lower().replace('.','__')
-                print column
-                if not any("__%s__"%witness in column for witness in witness_protection):
-                    columns.append(column)
-            rows = rows.values(*columns)
-            count = rows.count()
-
-    return render(request, 'data_interrogator/custom.html', {'form': form,'rows':rows,'columns':columns})
+                if any("__%s__"%witness in column for witness in witness_protection):
+                    pass # do nothing for protected models
+                elif column.startswith("count:"):
+                    field = column.split(':',1)[1]
+                    annotations[column] = Count(field)
+                    output_columns.append(column)
+                else:
+                    query_columns.append(column)
+                    output_columns.append(column)
+            
+            print annotations
+            rows = rows.values(*query_columns)
+            if annotations:
+                rows = rows.annotate(**annotations)
+            #rows = rows.values(*output_columns)
+    return render(request, 'data_interrogator/custom.html', {'form': form,'rows':rows,'columns':output_columns})

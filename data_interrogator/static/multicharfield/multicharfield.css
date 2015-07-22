@@ -1,0 +1,7 @@
+div.multicharfield .field-group {
+    display:inline-block;
+    padding-left:3px;
+}
+div.multicharfield input[type="text"] {
+    width:200px;
+}
