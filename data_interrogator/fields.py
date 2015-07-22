@@ -33,25 +33,6 @@ class MultipleCharInput(MultiWidget):
     def render(self, name, value, attrs=None):
         html = super(MultipleCharInput,self).render(name, value, attrs)
 
-        if self.is_localized:
-            for widget in self.widgets:
-                widget.is_localized = self.is_localized
-        # value is a list of values, each corresponding to a widget
-        # in self.widgets.
-        if not isinstance(value, list):
-            value = self.decompress(value)
-        output = []
-        final_attrs = self.build_attrs(attrs)
-        id_ = final_attrs.get('id')
-        for i, widget in enumerate(self.widgets):
-            try:
-                widget_value = value[i]
-            except IndexError:
-                widget_value = None
-            if id_:
-                final_attrs = dict(final_attrs, id='%s_%s' % (id_, i))
-            output.append(widget.render(name + '_%s' % i, widget_value, final_attrs))
-        html = mark_safe(self.format_output(output))
         return format_html(
             "<div><span>"+html+"""</span>
             <span style="display:none;">"""+RemovableTextInput().render(name=name,value="")+"""</span>
@@ -59,7 +40,6 @@ class MultipleCharInput(MultiWidget):
             )
 
     def value_from_datadict(self, data, files, name):
-        print data.getlist(name)
         return data.getlist(name)
 
 class MultipleCharField(MultiValueField):
@@ -80,17 +60,12 @@ class MultipleCharField(MultiValueField):
 
     def clean(self, value):
         return value
-        print "VALUE:",value
-        value = super(MultipleCharField,self).clean(value)
-        print value
-        return self.widget.decompress(value)
-        
 
 class RemovableTextInput(TextInput):
     def render(self, name, value, attrs={},remove_text="-"):
         name = name.rsplit('_',1)[0]
         html = super(RemovableTextInput,self).render(name, value, attrs=attrs)
         return format_html(
-            "<div>"+html+"<input type='button' value='%s' onclick='this.parentElement.remove();return false' /></div>"%remove_text
+            "<div>"+html+"<input type='button' value='%s' onclick='removeColumn(this);return false' /></div>"%remove_text
             )
         
