@@ -80,17 +80,14 @@ def interrogation_room(request):
                     query_columns.append(column)
                     output_columns.append(column)
             
-            print query_columns, suspect_data
             rows = rows.values(*query_columns)
             if annotations:
                 rows = rows.annotate(**annotations)
             if form.cleaned_data['sort_by']:
-                print rows.query
                 ordering = clean_sort_columns(form.cleaned_data['sort_by'])
                 rows = rows.order_by(*ordering)
                 
             #rows = rows.values(*output_columns)
-            print query_columns,suspect_data
     return {'form': form,'rows':rows,'columns':output_columns,'errors':errors, 'suspect':suspect_data }
 
 def clean_sort_columns(text):
