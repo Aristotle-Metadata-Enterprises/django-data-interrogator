@@ -20,7 +20,7 @@ class MultipleCharInput(MultiWidget):
 
     def get_widgets(self,number,attrs):
         self.extra = int(number)
-        widgets = [RemovableTextInput(remove_text=self.remove_text,remove_title=self.remove_title,attrs=attrs) for i in range(number)]
+        widgets = [TextInput(attrs=attrs) for i in range(number)]
         return widgets
 
     def decompress(self, value):
@@ -34,13 +34,35 @@ class MultipleCharInput(MultiWidget):
         if value:
             self.widgets = self.get_widgets(len(value),attrs)
 
-        html = super(MultipleCharInput,self).render(name, value, attrs)
+        if self.is_localized:
+            for widget in self.widgets:
+                widget.is_localized = self.is_localized
+        # value is a list of values, each corresponding to a widget
+        # in self.widgets.
+        if not isinstance(value, list):
+            value = self.decompress(value)
+        output = []
+        final_attrs = self.build_attrs(attrs)
+        id_ = final_attrs.get('id')
+        for i, widget in enumerate(self.widgets):
+            try:
+                widget_value = value[i]
+            except IndexError:
+                widget_value = None
+            if id_:
+                final_attrs = dict(final_attrs, id='%s_%s' % (id_, i))
+            html = widget.render(name, widget_value, final_attrs)
+            html = "<div class='multichar-field-group'>"+html+"<input type='button' value='%s' title='%s' onclick='removeColumn(this);return false' /></div>"%(self.remove_text,self.remove_title)
+            output.append(html)
+        html = mark_safe(self.format_output(output))
+
+        #html = super(MultipleCharInput,self).render(name, value, attrs)
 
         return format_html(''.join([
             "<div class='multicharfield'>",
             "<span>"+html+"</span>",
             "<span style='display:none;'>",
-            RemovableTextInput(remove_text=self.remove_text,remove_title=self.remove_title,attrs=attrs).render(name=name,value=""),
+            TextInput(attrs=attrs).render(name=name,value=""),
             "</span>",
             "<input type='button' value='%s' onclick='addColumn(this.parentElement);return false' />"%self.add_text,
             "</div>"
@@ -68,17 +90,3 @@ class MultipleCharField(MultiValueField):
 
     def clean(self, value):
         return value
-
-class RemovableTextInput(TextInput):
-    def __init__(self, extra=1, remove_text="x",remove_title="remove", *args, **kwargs):
-        self.remove_text = remove_text
-        self.remove_title = remove_title
-        super(RemovableTextInput,self).__init__(*args, **kwargs)
-
-    def render(self, name, value, attrs={}):
-        name = name.rsplit('_',1)[0]
-        html = super(RemovableTextInput,self).render(name, value, attrs=attrs)
-        return format_html(
-            "<div class='multichar-field-group'>"+html+"<input type='button' value='%s' title='%s' onclick='removeColumn(this);return false' /></div>"%(self.remove_text,self.remove_title)
-            )
-        

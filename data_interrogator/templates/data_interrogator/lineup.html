@@ -1,3 +1,11 @@
+{% if errors %}
+    <strong>There were errors processing your query, please correct the following issues</strong>
+    <ul class="interrogation_errors">
+        {% for error in errors %}
+            <li>{{ error|linebreaks }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
 <form method="post">
     {% csrf_token %}
     {{ form.media }}
