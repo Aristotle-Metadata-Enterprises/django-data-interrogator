@@ -31,8 +31,8 @@ class MultipleCharInput(MultiWidget):
         return ['']*self.extra
 
     def render(self, name, value, attrs=None):
-        
-        self.widgets = self.get_widgets(len(value),attrs)
+        if value:
+            self.widgets = self.get_widgets(len(value),attrs)
 
         html = super(MultipleCharInput,self).render(name, value, attrs)
 
@@ -79,6 +79,6 @@ class RemovableTextInput(TextInput):
         name = name.rsplit('_',1)[0]
         html = super(RemovableTextInput,self).render(name, value, attrs=attrs)
         return format_html(
-            "<div class='field-group'>"+html+"<input type='button' value='%s' title='%s' onclick='removeColumn(this);return false' /></div>"%(self.remove_text,self.remove_title)
+            "<div class='multichar-field-group'>"+html+"<input type='button' value='%s' title='%s' onclick='removeColumn(this);return false' /></div>"%(self.remove_text,self.remove_title)
             )
         

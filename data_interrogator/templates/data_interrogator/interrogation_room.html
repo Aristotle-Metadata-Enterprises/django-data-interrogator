@@ -1,8 +1,7 @@
-{% load investigation %}
+{% load data_interrogator %}
 {% block content %}
 
 <div class="row">
-    <h1>Custom table builder</h1>
     <table class="table" data-toggle="table"
            data-toolbar="#toolbar"
            data-search="true"
@@ -16,7 +15,7 @@
         <thead>
             <tr>
                 {% for col in columns %}
-                    <th data-switchable='true' data-sortable='true'>{{ col }}</th>
+                    <th data-switchable='true' data-sortable='true'>{% clean_column_name col %}</th>
                 {% endfor %}
             </tr>
         </thead>
@@ -24,7 +23,7 @@
             {% for row in rows %}
             <tr>
                 {% for col in columns %}
-                    <td>{% lookup row col %}</td>
+                    <td>{% wrap_sheet row col %}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

@@ -8,7 +8,10 @@ from data_interrogator.fields import MultipleCharField
 
 suspects = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('suspects',[])
 
-SUSPECTS = [ (("%s:%s")%(app,model),model) for app,model in suspects ]
+SUSPECTS = []
+for suspect in suspects:
+    app,model = suspect['model']
+    SUSPECTS.append(("%s:%s"%(app,model),model))
 
 class InvestigationForm(forms.Form):
     lead_suspect = forms.ChoiceField(choices=SUSPECTS,required=True,label="Initial object")
