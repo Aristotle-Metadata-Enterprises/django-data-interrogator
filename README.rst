@@ -1,7 +1,7 @@
 django-data-interrogator
 ========================
 
-`django-data-interrogator` is a plug in table builder that allows users to easily interrogate information from a django database. In essence it provides a smart and sane frontend for building tabular data from the django database queryset API - specifically ``values``, ``filter``, ``order_by`` and a handful of annotations.
+``django-data-interrogator`` is a plug in table builder that allows users to easily interrogate information from a django database. In essence it provides a smart and sane frontend for building tabular data from the django database queryset API - specifically ``values``, ``filter``, ``order_by`` and a handful of annotations.
 
 Installing
 ----------
@@ -62,4 +62,4 @@ Below is an example dossier for a single model, with a wrapsheet for the column 
         ]
      }
 
-The ``columns`` value in the ``wrapsheet`` specified additional columns of data to be retrieved when querying the specified attribute. So in the above example, whenever anyone requests the ``foo`` attribute when interrogating the ``YourModel`` model the ``pk`` and ``bar`` fields will also be retrieved, *but will not be visible in the output table*. However they will be accessible in the ``yourapp/special_columns/for_foo.html`` template which will be used when rendering the `<td>` table cell in the table.
+The ``columns`` value in the ``wrapsheet`` specified additional columns of data to be retrieved when querying the specified attribute. So in the above example, whenever anyone requests the ``foo`` attribute when interrogating the ``YourModel`` model the ``pk`` and ``bar`` fields will also be retrieved, *but will not be visible in the output table*. However they will be accessible in the ``yourapp/special_columns/for_foo.html`` template which will be used when rendering the ``<td>`` table cell in the table.
