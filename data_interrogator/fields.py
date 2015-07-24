@@ -62,7 +62,9 @@ class MultipleCharInput(MultiWidget):
         values = [v for v in data.getlist(name) if v != ""]
         return values
 
-    def render_field(self, name, widget_value="", final_attrs={}):
+    def render_field(self, name, widget_value=None, final_attrs={}):
+        if widget_value is None:
+            widget_value = ""
         attrs = " ".join(["%s='%s'"%(key,val) for key,val in final_attrs])
         return get_template("data_interrogator/multicharfield.html").render(
                 Context({   'remove_text':self.remove_text,
