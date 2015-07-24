@@ -23,8 +23,9 @@ def interrogation_room(context):
 def clean_column_name(column_name):
     if '___' in column_name:
         #we have an aggregation of some kind.
-        column_name = column_name.replace('___','(')+')'
+        column_name = column_name.replace('___','(<wbr>')+')'
     column_name = column_name.replace('__','.').replace('_',' ')
+    column_name = column_name.replace(".",'<wbr>.')
     return column_name
 
 @register.simple_tag(takes_context=True)

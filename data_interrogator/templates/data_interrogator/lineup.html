@@ -9,6 +9,6 @@
 <form method="post">
     {% csrf_token %}
     {{ form.media }}
-    {{ form.as_p }}
-    <input class="btn btn-default" type="submit" value="Update table">
+    {{ form }}
+    <input type="submit" value="Update table">
 </form>

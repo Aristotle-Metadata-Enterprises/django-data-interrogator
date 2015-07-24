@@ -4,7 +4,7 @@ from data_interrogator import forms
 
 from django.conf import settings
 from django.core import exceptions
-from django.db.models import Count, Min, Max
+from django.db.models import F, Count, Min, Max
 from django.template.loader import get_template
 from django.template import Context
 
@@ -77,6 +77,10 @@ def interrogation_room(request):
                         key,val = normalise_field(expression).split("=",1)
                         key = key.strip()
                         val = val.strip()
+                        if val.startswith('='):
+                            val = F(val[1:])
+                        
+                        
                         kwargs[key] = val
                     rows = rows.filter(**kwargs)
                 rows = rows.values(*query_columns)
@@ -84,9 +88,11 @@ def interrogation_room(request):
                     rows = rows.annotate(**annotations)
                 if form.cleaned_data['sort_by']:
                     ordering = map(normalise_field,form.cleaned_data['sort_by'])
-                    print ordering
                     rows = rows.order_by(*ordering)
                 rows[0] #force a database hit to check the state of things
+            except IndexError,e:
+                rows = []
+                errors.append("No rows returned for your query, try broadening your search.")
             except exceptions.FieldError,e:
                 rows = []
                 if str(e).startswith('Cannot resolve keyword'):

@@ -1,5 +1,7 @@
 from django.forms.fields import MultiValueField, CharField
 from django.forms.widgets import TextInput, MultiWidget
+from django.template.loader import get_template
+from django.template import Context
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 
@@ -43,34 +45,33 @@ class MultipleCharInput(MultiWidget):
             value = self.decompress(value)
         output = []
         final_attrs = self.build_attrs(attrs)
-        id_ = final_attrs.get('id')
         for i, widget in enumerate(self.widgets):
             try:
                 widget_value = value[i]
             except IndexError:
                 widget_value = None
-            if id_:
-                final_attrs = dict(final_attrs, id='%s_%s' % (id_, i))
-            html = widget.render(name, widget_value, final_attrs)
-            html = "<div class='multichar-field-group'>"+html+"<input type='button' value='%s' title='%s' onclick='removeColumn(this);return false' /></div>"%(self.remove_text,self.remove_title)
+            html = self.render_field(name, widget_value, final_attrs)
             output.append(html)
         html = mark_safe(self.format_output(output))
-
-        #html = super(MultipleCharInput,self).render(name, value, attrs)
-
-        return format_html(''.join([
-            "<div class='multicharfield'>",
-            "<span>"+html+"</span>",
-            "<span style='display:none;'>",
-            TextInput(attrs=attrs).render(name=name,value=""),
-            "</span>",
-            "<input type='button' value='%s' onclick='addColumn(this.parentElement);return false' />"%self.add_text,
-            "</div>"
-            ]))
+        blank_widget = self.render_field(name=name)
+        return mark_safe(get_template("data_interrogator/multichar.html").render(
+                Context({'html':html,'blank_widget':blank_widget,'add_text':self.add_text})
+            ))
 
     def value_from_datadict(self, data, files, name):
         values = [v for v in data.getlist(name) if v != ""]
         return values
+
+    def render_field(self, name, widget_value="", final_attrs={}):
+        attrs = " ".join(["%s='%s'"%(key,val) for key,val in final_attrs])
+        return get_template("data_interrogator/multicharfield.html").render(
+                Context({   'remove_text':self.remove_text,
+                            'remove_title':self.remove_title,
+                            'name':name,
+                            'value':widget_value,
+                            'attrs':attrs
+                        })
+            )
 
 class MultipleCharField(MultiValueField):
     widget = MultipleCharInput

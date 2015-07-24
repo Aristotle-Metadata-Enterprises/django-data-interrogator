@@ -1,33 +1,20 @@
 {% load data_interrogator %}
-{% block content %}
 
-<div class="row">
-    <table class="table" data-toggle="table"
-           data-toolbar="#toolbar"
-           data-search="true"
-           data-show-refresh="false"
-           data-show-filter="true"
-           data-show-toggle="true"
-           data-show-columns="true"
-           data-show-export="true"
-           data-detail-view="false"
-    >
-        <thead>
-            <tr>
-                {% for col in columns %}
-                    <th data-switchable='true' data-sortable='true'>{% clean_column_name col %}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                {% for col in columns %}
-                    <td>{% wrap_sheet row col %}</td>
-                {% endfor %}
-            </tr>
+<table class="table interrogation_room">
+    <thead>
+        <tr>
+            {% for col in columns %}
+                <th>{% clean_column_name col %}</th>
             {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endblock %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for col in columns %}
+                <td>{% wrap_sheet row col %}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
