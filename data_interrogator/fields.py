@@ -55,7 +55,7 @@ class MultipleCharInput(MultiWidget):
         html = mark_safe(self.format_output(output))
         blank_widget = self.render_field(name=name)
         return mark_safe(get_template("data_interrogator/multichar.html").render(
-                Context({'html':html,'blank_widget':blank_widget,'add_text':self.add_text})
+                Context({'id':name,'html':html,'blank_widget':blank_widget,'add_text':self.add_text})
             ))
 
     def value_from_datadict(self, data, files, name):

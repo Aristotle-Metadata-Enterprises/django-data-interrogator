@@ -1,5 +1,9 @@
 {% load data_interrogator %}
 
+{% if count %}
+{{ count }} rows returned
+{% endif %}
+
 <table class="table interrogation_room">
     <thead>
         <tr>
