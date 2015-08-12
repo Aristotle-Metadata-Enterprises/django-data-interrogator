@@ -55,7 +55,6 @@ def column_generator(request):
     return JsonResponse({'model': model,'fields':fields,'related_models':related_models})
 
 def interrogation_room(request,template='data_interrogator/custom.html'):
-    print request.GET, template
     data = {}
     form = forms.InvestigationForm()
     has_valid_columns = any([True for c in request.GET.getlist('columns',[]) if c != ''])
