@@ -6,9 +6,10 @@
         {% endfor %}
     </ul>
 {% endif %}
-<form method="post">
-    {% csrf_token %}
+<form method="get">
     {{ form.media }}
     {{ form }}
-    <input type="submit" value="Update table">
+    <button name="action" type="submit" value="">Update table</button>
+    {% if request.user.is_superuser %}
+    <button name="action" type="submit" value="makestatic">Make a static table</button>
 </form>

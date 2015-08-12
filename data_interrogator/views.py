@@ -1,11 +1,13 @@
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import render
-from data_interrogator import forms
+from data_interrogator import forms, models
 
 from django.conf import settings
 from django.core import exceptions
+from django.core.urlresolvers import reverse
 from django.db.models import F, Count, Min, Max, sql
-from django.http import JsonResponse
+from django.http import JsonResponse, QueryDict
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import get_template
 from django.template import Context
 
@@ -38,11 +40,11 @@ if dossier.get("suspect_grouping",False):
         SQLCompiler.get_grouping = custom_get_grouping
 
 def custom_table(request):
-    data = interrogation_room(request)
-    return render(request, 'data_interrogator/custom.html', data)
+    return interrogation_room(request, 'data_interrogator/custom.html')
 
 def column_generator(request):
     model = request.GET.get('model','')
+    
     if model:
         app_label,model = model.split(':',1)
         lead_suspect = ContentType.objects.get(app_label=app_label.lower(),model=model.lower()).model_class()
@@ -52,15 +54,14 @@ def column_generator(request):
         
     return JsonResponse({'model': model,'fields':fields,'related_models':related_models})
 
-def interrogation_room(request):
-    rows = []
+def interrogation_room(request,template='data_interrogator/custom.html'):
+    print request.GET, template
     data = {}
-    count = None
     form = forms.InvestigationForm()
-
-    if request.method == 'POST':
+    has_valid_columns = any([True for c in request.GET.getlist('columns',[]) if c != ''])
+    if request.method == 'GET' and has_valid_columns:
         # create a form instance and populate it with data from the request:
-        form = forms.InvestigationForm(request.POST)
+        form = forms.InvestigationForm(request.GET)
         # check whether it's valid:
         if form.is_valid():
             # process the data in form.cleaned_data as required
@@ -68,9 +69,35 @@ def interrogation_room(request):
             order_by = form.cleaned_data.get('sort_by',[])
             columns = form.cleaned_data.get('columns',[])
             suspect = form.cleaned_data['lead_suspect']
-            data = interrogate(suspect,columns=columns,filters=filters,order_by=order_by)
+            if request.user.is_superuser and request.GET.get('action','') == 'makestatic':
+                # populate the appropriate GET variables and redirect to the admin site
+                base = reverse("admin:data_interrogator_datatablepage_add")
+                vals = QueryDict('', mutable=True)
+                vals.setlist('columns',columns)
+                vals.setlist('filters',filters)
+                vals.setlist('orders',order_by)
+                vals['base_model'] = suspect
+                return redirect('%s?%s'%(base,vals.urlencode()))
+            else:
+                data = interrogate(suspect,columns=columns,filters=filters,order_by=order_by)
     data['form']=form
-    return data
+    return render(request, template, data)
+    
+def datatable(request,url):
+    table = get_object_or_404(models.DataTablePage, url=url)
+
+    filters = [f.filter_definition for f in table.filters.all()]
+    columns = [c.column_definition for c in table.columns.all()]
+    orderby = [f.ordering for f in table.order.all()]
+    suspect = table.base_model
+    
+    template = "data_interrogator/by_the_book.html"
+    if table.template_name:
+        template
+        
+    data = interrogate(suspect,columns=columns,filters=filters,order_by=orderby)
+    data['table'] = table
+    return render(request, template, data)
 
 
 def interrogate(suspect,columns=[],filters=[],order_by=[]):
