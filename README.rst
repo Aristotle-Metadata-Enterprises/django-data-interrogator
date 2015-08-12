@@ -33,8 +33,7 @@ Quickstart
 #. Make a view to capture form requests and pass the request off to the *interrogator*::
 
     def custom_table(request):
-        data = interrogation_room(request)
-        return render(request, 'your/interrogation/template.html', data)
+        return interrogation_room(request, template='your/interrogation/template.html')
 
 #. Make sure your template can handle the interrogation procedures::
 
