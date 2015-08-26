@@ -1,4 +1,4 @@
-{% load data_interrogator %}
+{% load data_interrogator_tags %}
 
 {% if count %}
 {{ count }} rows returned
@@ -7,9 +7,15 @@
 <table class="table interrogation_room">
     <thead>
         <tr>
-            {% for col in columns %}
-                <th>{% clean_column_name col %}</th>
-            {% endfor %}
+            {% if headers %}
+                {% for col,text in headers %}
+                    <th>{{ text }}</th>
+                {% endfor %}
+            {% else %}
+                {% for col in columns %}
+                    <th>{% clean_column_name col %}</th>
+                {% endfor %}
+            {% endif %}
         </tr>
     </thead>
     <tbody>

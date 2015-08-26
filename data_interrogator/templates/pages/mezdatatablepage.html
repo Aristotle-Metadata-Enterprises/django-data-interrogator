@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load data_interrogator_tags %}
+{% load mezzanine_tags %}
+
+{% block title %}{{ page.title }}{% endblock %}
+{% block meta_title %}{{ page.title }}{% endblock %}
+
+{% block main %}
+{{page.mezdatatablepage.content|safe}}
+
+{% mez_interrogation_room page %}
+{% if page.mezdatatablepage.script %}
+<script type="text/javascript">
+{{ page.mezdatatablepage.script|safe }}
+</script>
+{% endif %}
+{% endblock %}

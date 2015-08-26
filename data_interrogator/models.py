@@ -13,7 +13,7 @@ class DataTablePage(models.Model):
     This is a semi-re-write of the Django FlatPages app as site configs are superfluous and we need extra fields.
     We also probably don't want comments.
     """
-    url = models.CharField(_('URL'), max_length=100, db_index=True)
+    url = models.CharField(_('URL'), max_length=100, db_index=True,primary_key=True)
     title = models.CharField(_('title'), max_length=200)
     content = models.TextField(_('content'), blank=True)
 
@@ -46,7 +46,7 @@ class DataTablePage(models.Model):
             
 class DataTablePageColumn(models.Model):
     table = models.ForeignKey(DataTablePage,related_name="columns")
-    header_text = models.CharField(max_length=255,
+    header_text = models.CharField(max_length=255,null=True,blank=True,
         help_text="The text displayed in the table header for this column")
     column_definition = models.TextField(
         help_text="The definition used to extract data from the database")

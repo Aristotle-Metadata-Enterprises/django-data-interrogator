@@ -3,7 +3,13 @@ from django.contrib.flatpages.admin import FlatpageForm, FlatPageAdmin
 from django.forms.models import BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from data_interrogator import models, forms
+from django.conf import settings
 
+class TabularInlineWithRequestInFormset(admin.TabularInline):
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super(TabularInlineWithRequestInFormset, self).get_formset(request, obj, **kwargs)
+        formset.request = request
+        return formset
 
 class DataFilterInlineFormSet(BaseInlineFormSet):
     model = models.DataTablePageFilter
@@ -21,15 +27,10 @@ class DataFilterInlineFormSet(BaseInlineFormSet):
             kwargs['data']=data
         super(DataFilterInlineFormSet, self).__init__(*args, **kwargs)            
 
-class DataFilterInline(admin.TabularInline):
+class DataFilterInline(TabularInlineWithRequestInFormset):
     model = models.DataTablePageFilter
-    extra = 0
+    extra = 1
     formset = DataFilterInlineFormSet
-
-    def get_formset(self, request, obj=None, **kwargs):
-        formset = super(DataFilterInline, self).get_formset(request, obj, **kwargs)
-        formset.request = request
-        return formset
 
 class DataOrderInlineFormSet(BaseInlineFormSet):
     model = models.DataTablePageOrder
@@ -47,16 +48,10 @@ class DataOrderInlineFormSet(BaseInlineFormSet):
             kwargs['data']=data
         super(DataOrderInlineFormSet, self).__init__(*args, **kwargs)            
 
-class DataOrderInline(admin.TabularInline):
+class DataOrderInline(TabularInlineWithRequestInFormset):
     model = models.DataTablePageOrder
-    extra = 0
+    extra = 1
     formset = DataOrderInlineFormSet
-
-    def get_formset(self, request, obj=None, **kwargs):
-        formset = super(DataOrderInline, self).get_formset(request, obj, **kwargs)
-        formset.request = request
-        return formset
-
 
 class DataColumnInlineFormSet(BaseInlineFormSet):
     model = models.DataTablePageColumn
@@ -75,16 +70,10 @@ class DataColumnInlineFormSet(BaseInlineFormSet):
             kwargs['data']=data
         super(DataColumnInlineFormSet, self).__init__(*args, **kwargs)            
 
-class DataColumnInline(admin.TabularInline):
+class DataColumnInline(TabularInlineWithRequestInFormset):
     model = models.DataTablePageColumn
     extra = 1
     formset = DataColumnInlineFormSet
-
-    def get_formset(self, request, obj=None, **kwargs):
-        formset = super(DataColumnInline, self).get_formset(request, obj, **kwargs)
-        formset.request = request
-        return formset
-
 
 class DataTablePageAdmin(admin.ModelAdmin):
     form = forms.DataTablePageForm
@@ -99,5 +88,3 @@ class DataTablePageAdmin(admin.ModelAdmin):
     list_display = ('url', 'title', 'status')
     list_filter = ('columns', 'status', 'registration_required')
     search_fields = ('url', 'title')
-
-admin.site.register(models.DataTablePage, DataTablePageAdmin)

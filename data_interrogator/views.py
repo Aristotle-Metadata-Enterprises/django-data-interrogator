@@ -92,20 +92,20 @@ def datatable(request,url):
     
     template = "data_interrogator/by_the_book.html"
     if table.template_name:
-        template
+        template = table.template_name
         
     data = interrogate(suspect,columns=columns,filters=filters,order_by=orderby)
     data['table'] = table
     return render(request, template, data)
 
 
-def interrogate(suspect,columns=[],filters=[],order_by=[]):
+def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[]):
     errors = []
     suspect_data = {}
     annotation_filters = {}
     query_columns = []
     output_columns = []
-    
+    count=0
     app_label,model = suspect.split(':',1)
     lead_suspect = ContentType.objects.get(app_label=app_label.lower(),model=model.lower()).model_class()
 
@@ -175,7 +175,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[]):
         else:
             errors.append("An error was found with your query:\n%s"%e)
 
-    return {'rows':rows,'count':count,'columns':output_columns,'errors':errors, 'suspect':suspect_data }
+    return {'rows':rows,'count':count,'columns':output_columns,'errors':errors, 'suspect':suspect_data,'headers':headers }
 
 def normalise_field(text):
     return text.strip().replace('(','___').replace(')','').replace(".","__")
