@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.contrib.flatpages.models import FlatPage
+#from django.contrib.flatpages.models import FlatPage
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.contrib.flatpages.admin import FlatpageForm, FlatPageAdmin
+#from django.contrib.flatpages.admin import FlatpageForm, FlatPageAdmin
 from django.forms.models import BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 from data_interrogator import models, forms
@@ -88,3 +88,5 @@ class DataTablePageAdmin(admin.ModelAdmin):
     list_display = ('url', 'title', 'status')
     list_filter = ('columns', 'status', 'registration_required')
     search_fields = ('url', 'title')
+
+admin.site.register(models.DataTablePage,DataTablePageAdmin)

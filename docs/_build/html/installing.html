@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installing and configuring &mdash; django-spaghetti-and-meatballs 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="django-spaghetti-and-meatballs 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="Customising the output" href="customising.html" />
+    <link rel="prev" title="Welcome to django-spaghetti-and-meatballs’s documentation!" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installing-and-configuring">
+<h1>Installing and configuring<a class="headerlink" href="#installing-and-configuring" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installing-spaghetti">
+<h2>Installing spaghetti<a class="headerlink" href="#installing-spaghetti" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Install some spaghetti:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install django-spaghetti-and-meatballs
+</pre></div>
+</div>
+</li>
+<li><p class="first">Add <code class="docutils literal"><span class="pre">&quot;django_spaghetti&quot;</span></code> to your <code class="docutils literal"><span class="pre">INSTALLED_APPS</span></code> setting like this:</p>
+<div class="highlight-python"><div class="highlight"><pre>INSTALLED_APPS = [
+  ...
+  &#39;django_spaghetti&#39;,
+]
+</pre></div>
+</div>
+</li>
+<li><p class="first">Add a plate of spaghetti in your <code class="docutils literal"><span class="pre">urls.py</span></code> like so:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">urlpatterns</span> <span class="o">+=</span> <span class="n">patterns</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+  <span class="n">url</span><span class="p">(</span><span class="s">r&#39;^plate/&#39;</span><span class="p">,</span> <span class="n">include</span><span class="p">(</span><span class="s">&#39;django_spaghetti.urls&#39;</span><span class="p">)),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="configuring-meatballs">
+<h2>Configuring meatballs<a class="headerlink" href="#configuring-meatballs" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">django-spaghetti-and-meatballs</span></code> takes a few options set in the <code class="docutils literal"><span class="pre">SPAGHETTI_SAUCE</span></code>
+variable from your projects <code class="docutils literal"><span class="pre">settings.py</span></code> file that make it <cite>extra spicy</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SPAGHETTI_SAUCE</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s">&#39;apps&#39;</span><span class="p">:[</span><span class="s">&#39;auth&#39;</span><span class="p">,</span><span class="s">&#39;polls&#39;</span><span class="p">],</span>
+  <span class="s">&#39;show_fields&#39;</span><span class="p">:</span><span class="bp">False</span><span class="p">,</span>
+  <span class="s">&#39;exclude&#39;</span><span class="p">:{</span><span class="s">&#39;auth&#39;</span><span class="p">:[</span><span class="s">&#39;user&#39;</span><span class="p">]}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In the above dictionary, the following settings are used:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">apps</span></code> is a list of apps you want to show in the graph. If its <cite>not</cite> in here it <cite>won&#8217;t be seen</cite>.</li>
+<li><code class="docutils literal"><span class="pre">show_fields</span></code> is a boolean that states if the field names should be shown in the graph or just in the however over. For small graphs, you can set this to <cite>True</cite> to show fields as well, but as you get more models it gets messier.</li>
+<li><code class="docutils literal"><span class="pre">exclude</span></code> is a dictionary where each key is an <code class="docutils literal"><span class="pre">app_label</span></code> and the items for that key are model names to hide in the graph.</li>
+</ul>
+<p>If its not working as expected make sure your app labels and model names are all <strong>lower case</strong>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installing and configuring</a><ul>
+<li><a class="reference internal" href="#installing-spaghetti">Installing spaghetti</a></li>
+<li><a class="reference internal" href="#configuring-meatballs">Configuring meatballs</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to django-spaghetti-and-meatballs&#8217;s documentation!</a></li>
+      <li>Next: <a href="customising.html" title="next chapter">Customising the output</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installing.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Samuel Spencer.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/installing.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
