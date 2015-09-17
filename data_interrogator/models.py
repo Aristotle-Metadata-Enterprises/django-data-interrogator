@@ -8,13 +8,59 @@ from model_utils import Choices
 
 suspects = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('suspects',[])
 
-class DataTablePage(models.Model):
+class DataTable(models.Model):
+    class Meta:
+        app_label = 'data_interrogator'
+    SUSPECTS = Choices(*[
+        ("%s:%s"%tuple(suspect['model']),suspect['model'][1]) for suspect in suspects
+        ])
+
+    title = models.CharField(_('title'), max_length=200)
+    base_model = models.CharField(choices=SUSPECTS, max_length=100)
+    limit = models.IntegerField(null=True,blank=True,default=None)
+    def __str__(self):
+        return self.title
+        
+class DataTablePageColumn(models.Model):
+    class Meta:
+        ordering = ['position']
+        app_label = 'data_interrogator'
+    table = models.ForeignKey(DataTable,related_name="columns")
+    header_text = models.CharField(max_length=255,null=True,blank=True,
+        help_text="The text displayed in the table header for this column")
+    column_definition = models.TextField(
+        help_text="The definition used to extract data from the database")
+    position = models.PositiveSmallIntegerField("Position")
+    def __repr__(self):
+        return self.column_definition
+
+class DataTablePageFilter(models.Model):
+    class Meta:
+        app_label = 'data_interrogator'
+    table = models.ForeignKey(DataTable,related_name="filters")
+    filter_definition = models.TextField(
+        help_text="The definition used to extract data from the database")
+    def __repr__(self):
+        return self.filter_definition
+
+class DataTablePageOrder(models.Model):
+    class Meta:
+        app_label = 'data_interrogator'
+    table = models.ForeignKey(DataTable,related_name="order")
+    ordering = models.TextField()
+    def __repr__(self):
+        return self.ordering
+
+
+class DataTablePage(DataTable):
     """
     This is a semi-re-write of the Django FlatPages app as site configs are superfluous and we need extra fields.
     We also probably don't want comments.
     """
+    class Meta:
+        app_label = 'data_interrogator'
+        ordering = ('url',)
     url = models.CharField(_('URL'), max_length=100, db_index=True,primary_key=True)
-    title = models.CharField(_('title'), max_length=200)
     content = models.TextField(_('content'), blank=True)
 
     STATUS = Choices(('draft','Draft'),('published','Published'))
@@ -30,38 +76,9 @@ class DataTablePage(models.Model):
         ),
     )
 
-    SUSPECTS = Choices(*[
-        ("%s:%s"%tuple(suspect['model']),suspect['model'][1]) for suspect in suspects
-        ])
-    base_model = models.CharField(choices=SUSPECTS, max_length=100)
-
-    class Meta:
-        ordering = ('url',)
-
     def __str__(self):
         return "%s - %s" % (self.url, self.title)
 
     def get_absolute_url(self):
         return reverse('data_interrogator:datatable', kwargs={'url': self.url})
             
-class DataTablePageColumn(models.Model):
-    table = models.ForeignKey(DataTablePage,related_name="columns")
-    header_text = models.CharField(max_length=255,null=True,blank=True,
-        help_text="The text displayed in the table header for this column")
-    column_definition = models.TextField(
-        help_text="The definition used to extract data from the database")
-    def __repr__(self):
-        return self.column_definition
-
-class DataTablePageFilter(models.Model):
-    table = models.ForeignKey(DataTablePage,related_name="filters")
-    filter_definition = models.TextField(
-        help_text="The definition used to extract data from the database")
-    def __repr__(self):
-        return self.filter_definition
-
-class DataTablePageOrder(models.Model):
-    table = models.ForeignKey(DataTablePage,related_name="order")
-    ordering = models.TextField()
-    def __repr__(self):
-        return self.ordering

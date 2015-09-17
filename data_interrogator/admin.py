@@ -67,6 +67,7 @@ class DataColumnInlineFormSet(BaseInlineFormSet):
             for i,c in enumerate(cols):
                 data['columns-%d-header_text'%i] = c
                 data['columns-%d-column_definition'%i] = c
+                data['columns-%d-position'%i] = i
             kwargs['data']=data
         super(DataColumnInlineFormSet, self).__init__(*args, **kwargs)            
 
@@ -74,6 +75,7 @@ class DataColumnInline(TabularInlineWithRequestInFormset):
     model = models.DataTablePageColumn
     extra = 1
     formset = DataColumnInlineFormSet
+    sortable_field_name = "position"
 
 class DataTablePageAdmin(admin.ModelAdmin):
     form = forms.DataTablePageForm
@@ -89,4 +91,17 @@ class DataTablePageAdmin(admin.ModelAdmin):
     list_filter = ('columns', 'status', 'registration_required')
     search_fields = ('url', 'title')
 
-admin.site.register(models.DataTablePage,DataTablePageAdmin)
+class DataTableAdmin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {'fields': ('title', 'base_model','limit')}),
+    )     
+    inlines = [DataColumnInline,DataFilterInline,DataOrderInline]
+
+    list_display = ('title',)
+    list_filter = ('columns',)
+    search_fields = ('title',)
+
+#admin.site.register(models.DataTablePage,DataTablePageAdmin)
+
+
+admin.site.register(models.DataTable,DataTableAdmin)

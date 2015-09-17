@@ -1,6 +1,8 @@
 from views import interrogation_room, interrogate
-
 from data_interrogator.urls import urlpatterns
+
+default_app_config = 'data_interrogator.apps.InterrogatorConfig'
+
 urls = (urlpatterns, 'data_interrogator', 'data_interrogator')
 
 __version_info__ = {

@@ -93,17 +93,29 @@ class Command(BaseCommand):
                 values = dict(  [(clean(key),clean(val))
                                 for key,val in zip(headers,row)
                                 if '.' not in key
-                                    and not key.startswith('_')
+                                    and not key.startswith(('_','+'))
                                     and not val == ''])
                 rels = dict([   (clean(key),clean(val))
                                 for key,val in zip(headers,row)
-                                if '.' in key and not key.startswith('_')])
+                                if '.' in key and not key.startswith(('_','+'))])
+                many = dict([   (clean(key),clean(val))
+                                for key,val in zip(headers,row)
+                                if '.' not in key
+                                    and key.startswith('+')
+                                    and not val == ''])
                 try:
                     with transaction.atomic():
                         # We might be trying to make a new thing that requires a foreign key
                         # Lets construct it instead and try that....
                         fk_fields = [f for f in model._meta.fields if f.__class__ == ForeignKey]
-                        models = set([f.related.parent_model for f in fk_fields])
+                        models = []
+                        for f in fk_fields:
+                            try:
+                                related_model = f.related.parent_model
+                            except AttributeError:
+                                related_model = f.related.model
+                            models.append(related_model)
+                        models = set(models)
                         rel_items = {}
                         if models:
                             for rel,val in rels.items():
@@ -125,7 +137,13 @@ class Command(BaseCommand):
                                     print('   from %s'%dict(fields))
                             values[field_name] = rel_obj
                         obj,created = model.objects.get_or_create(**values)
-                        
+                        for field_name,val in many.items():
+                            field = getattr(model,field_name.strip('+'))
+                            manager = getattr(obj,field_name.strip('+'))
+                            vals=[s.strip() for s in val.split('|') if s.strip() != '']
+                            for v in vals:
+                                p = field.field.related_model.objects.get(pk=v)
+                                manager.add(p)
                         if created:
                             success.append(i)
                         else:
