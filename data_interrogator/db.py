@@ -25,17 +25,8 @@ class ForceDate(Func):
 
     def as_sqlite(self, compiler, connection):
         self.function = 'julianday'
-        self.template = '%(function)s(%(expressions)s)*24*60*60*1000*1000'
+        self.template = '%(function)s(%(expressions)s)*24*60*60*1000*1000' # Convert julian day to microseconds as used by Django DurationField
         return super(ForceDate, self).as_sql(compiler, connection)
-
-class ForceDate2(Func):
-    function = 'julianday'
-
-    def __init__(self, expression, **extra):
-        self.__expression = expression
-        super(ForceDate, self).__init__(expression, **extra)
-    def split(self,*args,**kwargs):
-        return self.__expression.split(*args,**kwargs)
 
 class NotEqual(Lookup):
     lookup_name = 'ne'
