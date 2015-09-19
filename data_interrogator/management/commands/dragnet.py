@@ -90,18 +90,25 @@ class Command(BaseCommand):
                         continue
                     elif i >= lines[1]:
                         break
+                    
+                special_starts = ('_','+','=')
                 values = dict(  [(clean(key),clean(val))
                                 for key,val in zip(headers,row)
                                 if '.' not in key
-                                    and not key.startswith(('_','+'))
+                                    and not key.startswith(special_starts)
                                     and not val == ''])
                 rels = dict([   (clean(key),clean(val))
                                 for key,val in zip(headers,row)
-                                if '.' in key and not key.startswith(('_','+'))])
+                                if '.' in key and not key.startswith(special_starts)])
                 many = dict([   (clean(key),clean(val))
                                 for key,val in zip(headers,row)
                                 if '.' not in key
                                     and key.startswith('+')
+                                    and not val == ''])
+                funcs = dict([   (clean(key),clean(val))
+                                for key,val in zip(headers,row)
+                                if '.' not in key
+                                    and key.startswith('=')
                                     and not val == ''])
                 try:
                     with transaction.atomic():
@@ -146,6 +153,10 @@ class Command(BaseCommand):
                                 manager.add(p)
                         if created:
                             success.append(i)
+                            for f,val in funcs.items():
+                                f = f.lstrip('=')
+                                setattr(obj,f,val)
+                                obj.save()
                         else:
                             if verbosity>=2:
                                 print("Line %s - skipped"%i)

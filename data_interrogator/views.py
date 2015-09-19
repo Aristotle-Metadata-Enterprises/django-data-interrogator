@@ -4,12 +4,13 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core import exceptions
 from django.core.urlresolvers import reverse
-from django.db.models import F, Count, Min, Max, sql
+from django.db.models import F, Count, Min, Max, ExpressionWrapper, DurationField, FloatField, CharField
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import get_template
 from django.template import Context
 from data_interrogator import forms, models, db
+from datetime import timedelta
 
 # Because of the risk of data leakage from User, Revision and Version tables,
 # If a django user hasn't explicitly set up a witness protecion program,
@@ -120,7 +121,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
     annotations = {}
     wrap_sheets = suspect_data.get('wrap_sheets',{})
     available_annotations = {"min":Min,"max":Max,"count":Count,"concat":db.Concat}
-
+    expression_columns = []
     for column in columns:
         column = normalise_field(column).lower()
 
@@ -128,6 +129,24 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
 
         if column == "":
             pass # do nothings for empty fields
+        elif " - " in column:
+            a,b = column.split(' - ')
+            var_name = column
+            if '=' in a:
+                var_name,a = a.split('=',1)
+            
+            """if '__' in a:
+                a = '"parlhand_%s"."%s"'%tuple(a.split('__'))
+            if '__' in b:
+                b = '"parlhand_%s"."%s"'%tuple(b.split('__'))"""
+            print var_name,a,b
+            if a.endswith('date') and b.endswith('date'):
+                annotations[var_name] = ExpressionWrapper(db.ForceDate(F(a))-db.ForceDate(F(b)), output_field=DurationField())
+            else:
+                annotations[var_name] = ExpressionWrapper(F(a)-F(b), output_field=CharField())
+            query_columns.append(var_name)
+            output_columns.append(var_name)
+            expression_columns.append(var_name)
         elif any("__%s__"%witness in column for witness in witness_protection):
             pass # do nothing for protected models
         elif column.startswith(tuple([a+'___' for a in available_annotations.keys()])):
@@ -170,23 +189,28 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             if field not in query_columns:
                 query_columns.append(field)
             annotation_filters[key] = val
+        elif key.split('__')[0] in expression_columns:
+            print key, expression_columns
+            if 'date' in annotations[key]:
+                annotation_filters[key] = timedelta(days=int(val))
+            else:
+                annotation_filters[key] = val
+            print annotation_filters
         else:
             if key.endswith('__in'):
                 val = [v for v in val.split(',')]
             _filters[key] = val
     filters = _filters
-    print "f",filters
-    print 'a',annotations
-    print "a",annotation_filters
-    print "q",query_columns
+
     rows = rows.filter(**filters)
     if annotations:
         rows = rows.annotate(**annotations)
         rows = rows.filter(**annotation_filters)
-    #print rows.query
     if order_by:
         ordering = map(normalise_field,order_by)
         rows = rows.order_by(*ordering)
+
+    print rows.query
     try:
         if limit:
             lim = abs(int(limit))
@@ -210,6 +234,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             errors.append("An error was found with your query:\n%s"%e)
     except Exception,e:
         rows = []
+        raise
         errors.append("Something when wrong - %s"%e)
 
     return {'rows':rows,'count':count,'columns':output_columns,'errors':errors, 'suspect':suspect_data,'headers':headers }
