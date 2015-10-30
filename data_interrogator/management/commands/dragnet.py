@@ -36,14 +36,36 @@ class Command(BaseCommand):
             dest='line_nos',
             default=None,
             help='Which lines to process. (default: process all lines)'),
+        make_option('-F','--force',
+            action='store_true',
+            dest='force_create',
+            default=False,
+            help='Force creation instead of get_or_create. Useful when loading generics'),
+        make_option('-G','--generic',
+            action='store',
+            dest='generic_model_name',
+            default=None,
+            help='Generic relation we are inserting to the chosen model'),
+        make_option('-k','--update_keys',
+            action='store',
+            dest='update_keys',
+            default=None,
+            help='Comma separated list to Specify which columns are keys when searching - all other columns are updated'),
         )
 
     def handle(self, *args, **options):
         self.debug_mode = options['debug']
         requested_model = options['model_name']
+        generic_model = options['generic_model_name']
         separator = options['sep']
         verbosity = int(options['verbosity'])
         lines = options['line_nos']
+        update_keys = options['update_keys']
+        generic_map = {}
+
+        if update_keys:
+            update_keys = options['update_keys'].split(',')
+
         if lines:
             lines = sorted(map(int,lines.split('-',1)))
             if len(lines) == 0:
@@ -73,15 +95,42 @@ class Command(BaseCommand):
         except ContentType.DoesNotExist:
             print("Model does not exist - %s"%requested_model)
             return 
-        print("importing file <%s> in as model <%s>"%(filename,requested_model))
-        start_time = time.time()
+
         with open(filename, 'r') as imported_csv:
             reader = csv.reader(imported_csv,delimiter=separator)  # creates the reader object
             headers = reader.next() # get the headers
+
+            if generic_model is not None:
+                if generic_model == 'FILENAME':
+                    path,fn = filename.rsplit('/',1)
+                    generic_model,ext = fn.rsplit('.',1)
+                    csv_field=headers[0]
+                    generic_key=headers[0]
+                    generic_field='content_object'
+                elif len(generic_model.split(':')) == 4:
+                    generic_field,csv_field,generic_model,generic_key = generic_model.split(':',3)
+                elif len(generic_model.split(':')) == 3:
+                    generic_field,csv_field,generic_model = generic_model.split(':',2)
+                    generic_key=headers[0]
+                else:
+                    generic_field,generic_model = generic_model.split(':',1)
+                    csv_field='content_object'
+                    generic_key=headers[0]
+                g_app_label,g_model = generic_model.lower().split('.',1)
+                try:
+                    generic_model_type = ContentType.objects.get(app_label=g_app_label,model=g_model)
+                    generic_model = generic_model_type.model_class()
+                    generic_map[csv_field]=(generic_field,generic_model,generic_key)
+                except ContentType.DoesNotExist:
+                    print("Model does not exist - %s"%generic_model)
+                    return 
+            print("importing file <%s> in as model <%s>"%(filename,requested_model))
+            start_time = time.time()
+
             failed = []
             success = []
             skipped = []
-            for i,row in enumerate(reader):   # iterates the rows of the file in orders
+            for i,row in enumerate(reader):   # iterates the rows of the file in order
                 if len(failed) > 100:
                     print('something has gone terribly wrong.') 
                     break
@@ -91,25 +140,43 @@ class Command(BaseCommand):
                     elif i >= lines[1]:
                         break
                     
-                special_starts = ('_','+','=')
+                special_starts = (  '_', # ignored column
+                                    '+', # many-to-many id field
+                                    '=', # assign value to a property after saving
+                                    #'*', # Generics
+                                )
+                if update_keys:
+                    update_vals = dict(  [(clean(key),clean(val))
+                                for key,val in zip(headers,row)
+                                if key in update_keys])
+                else:
+                    update_vals = []
+                    
                 values = dict(  [(clean(key),clean(val))
                                 for key,val in zip(headers,row)
                                 if '.' not in key
-                                    and not key.startswith(special_starts)
-                                    and not val == ''])
+                                    and not clean(key).startswith(special_starts)
+                                    and not val == ''
+                                    and clean(key) not in generic_map.keys()])
                 rels = dict([   (clean(key),clean(val))
                                 for key,val in zip(headers,row)
-                                if '.' in key and not key.startswith(special_starts)])
+                                if '.' in key and not clean(key).startswith(special_starts)])
                 many = dict([   (clean(key),clean(val))
                                 for key,val in zip(headers,row)
                                 if '.' not in key
-                                    and key.startswith('+')
+                                    and clean(key).startswith('+')
                                     and not val == ''])
                 funcs = dict([   (clean(key),clean(val))
                                 for key,val in zip(headers,row)
                                 if '.' not in key
-                                    and key.startswith('=')
+                                    and clean(key).startswith('=')
                                     and not val == ''])
+                generics = dict([   (clean(key),clean(val))
+                                for key,val in zip(headers,row)
+                                if '.' not in key
+                                    and clean(key) in generic_map.keys()
+                                    and not val == ''])
+
                 try:
                     with transaction.atomic():
                         # We might be trying to make a new thing that requires a foreign key
@@ -143,7 +210,23 @@ class Command(BaseCommand):
                                 if verbosity >= 3:
                                     print('   from %s'%dict(fields))
                             values[field_name] = rel_obj
-                        obj,created = model.objects.get_or_create(**values)
+                        if self.debug_mode:
+                            print(values)
+
+                        if generics:
+                            for field,val in generics.items():
+                                field = field.strip('*')
+                                generic_field,g_model,lookup_key = generic_map[field]
+                                funcs[generic_field] = g_model(**{lookup_key:val})
+                        if options['force_create']:
+                            obj = model(**values)
+                            created = True
+                        else:
+                            if update_vals:
+                                obj,created = model.objects.update_or_create(defaults=values,**update_vals)
+                                print('updated',obj)
+                            else:
+                                obj,created = model.objects.get_or_create(**values)
                         for field_name,val in many.items():
                             field = getattr(model,field_name.strip('+'))
                             manager = getattr(obj,field_name.strip('+'))
@@ -151,12 +234,14 @@ class Command(BaseCommand):
                             for v in vals:
                                 p = field.field.related_model.objects.get(pk=v)
                                 manager.add(p)
+                        if options['force_create']:
+                            created = True
                         if created:
                             success.append(i)
                             for f,val in funcs.items():
                                 f = f.lstrip('=')
                                 setattr(obj,f,val)
-                                obj.save()
+                            obj.save()
                         else:
                             if verbosity>=2:
                                 print("Line %s - skipped"%i)
@@ -181,7 +266,6 @@ class Command(BaseCommand):
         if failed:
             print("  Failed: %s"%len(failed))
             print("  Failed on lines: %s"%str(failed))
-        
 
 def clean(string):
     return string.strip('"').strip().replace("\"","")

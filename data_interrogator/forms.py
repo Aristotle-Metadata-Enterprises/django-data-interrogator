@@ -67,3 +67,16 @@ class DataTablePageForm(forms.ModelForm):
             )
 
         return super(DataTablePageForm, self).clean()
+
+from django.contrib.contenttypes.models import ContentType
+LIST_OF_MODELS = [ ("%s:%s"%(m.app_label,m.model),"%s:%s"%(m.app_label,m.model))
+                    for m in ContentType.objects.all()]
+
+class UploaderForm(forms.Form):
+    main_model = forms.ChoiceField(choices=LIST_OF_MODELS,required=True,label="Main model")
+    delimiter = forms.ChoiceField(choices=[('comma','comma'),('tab','tab'),('other','other')],required=True,label="Delimiter",help_text='The character used to indicate separate columns in the file.')
+    other_delimiter = forms.CharField(required=False,label="Other delimiter",help_text="Only add if 'other' is selected above")
+    data_file = forms.FileField(required=True,label="Data file to upload")
+#    line_from = forms.PositiveIntegerField(required=True,label="Line to start processing from. Optional, default '0'.")
+#    line_to = forms.PositiveIntegerField(required=True,label="Line to finish processing on. Optional, default process all lines.")
+#    line_to = forms.PositiveIntegerField(required=True,label="Line to finish processing on. Optional, default process all lines.")

@@ -67,6 +67,6 @@ def static_interrogation_room(table):
     headers = [(c.column_definition,c.header_text or c.column_definition) for c in table.columns.all()]
     orderby = [f.ordering for f in table.order.all()]
     suspect = table.base_model
-    data = interrogate(suspect,columns=columns,headers=headers,filters=filters,order_by=orderby)
+    data = interrogate(suspect,columns=columns,headers=headers,filters=filters,order_by=orderby,limit=table.limit)
     data.pop('count')
     return get_template("data_interrogator/interrogation_room.html").render(Context(data))

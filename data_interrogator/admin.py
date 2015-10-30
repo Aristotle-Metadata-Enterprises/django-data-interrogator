@@ -105,3 +105,11 @@ class DataTableAdmin(admin.ModelAdmin):
 
 
 admin.site.register(models.DataTable,DataTableAdmin)
+
+
+def export_selected_objects(modeladmin, request, queryset):
+    selected = request.POST.getlist(admin.ACTION_CHECKBOX_NAME)
+    ct = ContentType.objects.get_for_model(queryset.model)
+    return HttpResponseRedirect("/export/?ct=%s&ids=%s" % (ct.pk, ",".join(selected)))
+
+admin.site.add_action(export_selected_objects)

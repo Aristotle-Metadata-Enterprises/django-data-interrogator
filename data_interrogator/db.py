@@ -4,6 +4,8 @@ from django.db.models.fields import Field#, RelatedField
 from django.db.models.fields.related import RelatedField,ForeignObject,ManyToManyField
 from django.db.models.expressions import Func
 
+# This is different to the built in Django Concat command, as that concats columns in a row
+# This concats one column from a selection of rows together.
 class Concat(Aggregate):
     # supports COUNT(distinct field)
     function = 'GROUP_CONCAT'
@@ -16,16 +18,19 @@ class Concat(Aggregate):
             output_field=CharField(),
             **extra)
 
-class ForceDate(Func):
-    function = None
+# SQLite function to force a date time subtraction to come out correctly.
+# This just returns the expression on every other database backend.
 
+class ForceDate(Func):
+    function = ''
+    template = "%(expressions)s"
     def __init__(self, expression, **extra):
         self.__expression = expression
         super(ForceDate, self).__init__(expression, **extra)
 
     def as_sqlite(self, compiler, connection):
         self.function = 'julianday'
-        self.template = '%(function)s(%(expressions)s)*24*60*60*1000*1000' # Convert julian day to microseconds as used by Django DurationField
+        self.template = 'coalesce(%(function)s(%(expressions)s),julianday())*24*60*60*1000*1000' # Convert julian day to microseconds as used by Django DurationField
         return super(ForceDate, self).as_sql(compiler, connection)
 
 class NotEqual(Lookup):
