@@ -5,8 +5,8 @@ from django.template.loader import get_template
 from django.template import Context
 from django.utils.translation import ugettext_lazy as _
 
-from data_interrogator.fields import MultipleCharField
-from data_interrogator.models import DataTablePage
+import models
+from fields import MultipleCharField
 
 suspects = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('suspects',[])
 
@@ -17,11 +17,16 @@ for suspect in suspects:
 
 class InvestigationForm(forms.Form):
     lead_suspect = forms.ChoiceField(choices=SUSPECTS,required=True,label="Initial object")
-    #filter_by = forms.CharField(label='Filter by', max_length=100, required=False)
     filter_by = MultipleCharField(extra=1,required=False, add_text="Add filter", remove_title="Remove filter", remove_text="-")
     columns = MultipleCharField(extra=2,required=False, add_text="Add column", remove_title="Remove column", remove_text="-")
     sort_by = MultipleCharField(extra=1,required=False, add_text="Add ordering", remove_title="Remove ordering", remove_text="-")
-    #sort_by = forms.CharField(label='Sort by', max_length=100, required=False)
+
+class PivotTableForm(forms.Form):
+    filter_by = MultipleCharField(extra=1,required=False, add_text="Add filter", remove_title="Remove filter", remove_text="-")
+    lead_suspect = forms.ChoiceField(choices=SUSPECTS,required=True,label="Initial object")
+    column_1 = forms.CharField()
+    column_2 = forms.CharField()
+    aggregators = MultipleCharField(extra=1,required=False, add_text="Add column", remove_title="Remove column", remove_text="-")
 
 class DataTablePageForm(forms.ModelForm):
     url = forms.RegexField(label=_("URL"), max_length=100, regex=r'^[-\w/\.~]+$',
@@ -33,7 +38,7 @@ class DataTablePageForm(forms.ModelForm):
         },
     )
     class Meta:
-        model = DataTablePage
+        model = models.DataTablePage
         fields = '__all__'
 
     def clean_url(self):
@@ -68,15 +73,24 @@ class DataTablePageForm(forms.ModelForm):
 
         return super(DataTablePageForm, self).clean()
 
-from django.contrib.contenttypes.models import ContentType
-LIST_OF_MODELS = [ ("%s:%s"%(m.app_label,m.model),"%s:%s"%(m.app_label,m.model))
-                    for m in ContentType.objects.all()]
-
 class UploaderForm(forms.Form):
-    main_model = forms.ChoiceField(choices=LIST_OF_MODELS,required=True,label="Main model")
-    delimiter = forms.ChoiceField(choices=[('comma','comma'),('tab','tab'),('other','other')],required=True,label="Delimiter",help_text='The character used to indicate separate columns in the file.')
-    other_delimiter = forms.CharField(required=False,label="Other delimiter",help_text="Only add if 'other' is selected above")
+
+                        
+    main_model = forms.ChoiceField(choices=[],required=True,label="Main model")
+    separator = forms.ChoiceField(choices=[('comma','comma'),('tab','tab'),('other','other')],required=True,label="Delimiter",help_text='The character used to indicate separate columns in the file.')
+    other_separator = forms.CharField(required=False,label="Other separator",help_text="Only add if 'other' is selected above")
+    #create_or_update = forms.ChoiceField(choices=[('create','create'),('update','update')],required=True,label="Update or create",help_text='')
+    update_keys = forms.CharField(required=False,help_text="Specify a comma separated list of headers in file used to identify objects to update with the other values. If left blank new records will be created if any fields differ from those in the database.")
     data_file = forms.FileField(required=True,label="Data file to upload")
 #    line_from = forms.PositiveIntegerField(required=True,label="Line to start processing from. Optional, default '0'.")
 #    line_to = forms.PositiveIntegerField(required=True,label="Line to finish processing on. Optional, default process all lines.")
-#    line_to = forms.PositiveIntegerField(required=True,label="Line to finish processing on. Optional, default process all lines.")
+
+    def __init__(self, *args, **kwargs):
+        super(UploaderForm,self).__init__(*args, **kwargs)
+        from django.contrib.contenttypes.models import ContentType
+        LIST_OF_MODELS = [ ("%s.%s"%(m.app_label,m.model),"%s.%s"%(m.app_label,m.model))
+                        for m in ContentType.objects.all()]
+
+        #self.fields['main_model'] = forms.ChoiceField(choices=LIST_OF_MODELS)
+        self.fields['main_model'].choices = LIST_OF_MODELS
+            

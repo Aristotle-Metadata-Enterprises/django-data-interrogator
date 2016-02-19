@@ -2,7 +2,7 @@ from django.contrib import admin
 #from django.contrib.flatpages.admin import FlatpageForm, FlatPageAdmin
 from django.forms.models import BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
-from data_interrogator import models, forms
+import models, forms
 from django.conf import settings
 
 class TabularInlineWithRequestInFormset(admin.TabularInline):

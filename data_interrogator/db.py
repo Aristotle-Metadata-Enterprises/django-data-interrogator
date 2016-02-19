@@ -1,6 +1,6 @@
 from django.db.models import Aggregate, CharField
 from django.db.models import Lookup
-from django.db.models.fields import Field#, RelatedField
+from django.db.models.fields import Field, DateField#, RelatedField
 from django.db.models.fields.related import RelatedField,ForeignObject,ManyToManyField
 from django.db.models.expressions import Func
 

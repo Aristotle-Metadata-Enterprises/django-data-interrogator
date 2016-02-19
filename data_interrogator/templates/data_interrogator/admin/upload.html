@@ -29,7 +29,12 @@
 <p>
     This page allows you to upload a data file for import into the database.
 </p>
-<table>
-{{form.as_table}}
-</table>
+<form action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <table>
+    {{form.as_table}}
+    </table>
+    <input type="submit" value="Submit" />
+</form>
+
 {% endblock %}

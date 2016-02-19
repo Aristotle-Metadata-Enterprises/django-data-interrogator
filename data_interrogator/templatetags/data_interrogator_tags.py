@@ -2,7 +2,6 @@ from django import template
 from django.core.urlresolvers import reverse, resolve
 from django.template import Context
 from django.template.loader import get_template
-from data_interrogator import interrogate
 
 register = template.Library()
 
@@ -42,7 +41,7 @@ def wrap_sheet(context,data,field):
 
 @register.filter
 def has_sorter(suspect,field):
-    print field,suspect
+
     sorter = suspect.get("wrap_sheets",{}).get(field,{}).get("sort",None)
     if sorter:
         return True
@@ -61,6 +60,7 @@ def sort_value(context,data,field):
 
 @register.simple_tag #(takes_context=True)
 def static_interrogation_room(table):
+    from data_interrogator.views import interrogate
 
     filters = [f.filter_definition for f in table.filters.all()]
     columns = [c.column_definition for c in table.columns.all()]

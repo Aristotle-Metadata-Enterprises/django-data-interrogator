@@ -1,15 +1,22 @@
 from __future__ import print_function
+from django.core.exceptions import FieldDoesNotExist
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.db.models.fields.related import ForeignKey
+from django.db.models.fields import DateField
 from parlhand import models
 import csv
+import datetime
 import time
 from parlhand.management.commands import utils as import_utils
-import reversion
+    
 from optparse import make_option
+from contextlib import contextmanager
+@contextmanager
+def fake_create_revision(*args,**kwargs):
+    yield
 
 class Command(BaseCommand):
     args = 'csv_file_name'
@@ -51,6 +58,16 @@ class Command(BaseCommand):
             dest='update_keys',
             default=None,
             help='Comma separated list to Specify which columns are keys when searching - all other columns are updated'),
+        make_option('-d','--date_format',
+            action='store',
+            dest='date_format',
+            default='%Y-%m-%d',
+            help='String representing the datetime format in a data file. Must be a conformant python strptime string.'),
+        make_option('-R','--disable_reversion',
+            action='store_true',
+            dest='disable_reversion',
+            default=False,
+            help='If django-reversion is available on the system, disable using it for this upload.'),
         )
 
     def handle(self, *args, **options):
@@ -62,6 +79,18 @@ class Command(BaseCommand):
         lines = options['line_nos']
         update_keys = options['update_keys']
         generic_map = {}
+        
+        if options['disable_reversion']:
+            using_reversion = False
+            create_revision = fake_create_revision
+        else:
+            try:
+                import reversion as revisions
+                using_reversion = True
+                create_revision = revisions.create_revision
+            except:
+                using_reversion = False
+                create_revision = fake_create_revision
 
         if update_keys:
             update_keys = options['update_keys'].split(',')
@@ -74,12 +103,12 @@ class Command(BaseCommand):
             lines = [0,2]
             
         if not args or len(args) == 0:
-            print(self.help)
+            self.stdout.write(self.help)
             return
         elif len(args) == 1:
             filename = args[0]
         else:
-            print("Wrong number of arguments")
+            self.stderr.write("Wrong number of arguments")
             return
 
         if requested_model is None:
@@ -93,7 +122,7 @@ class Command(BaseCommand):
             app_label,model = requested_model.lower().split('.',1)
             model = ContentType.objects.get(app_label=app_label,model=model).model_class()
         except ContentType.DoesNotExist:
-            print("Model does not exist - %s"%requested_model)
+            self.stderr.write("Model does not exist - %s"%requested_model)
             return 
 
         with open(filename, 'r') as imported_csv:
@@ -103,7 +132,7 @@ class Command(BaseCommand):
             if generic_model is not None:
                 if generic_model == 'FILENAME':
                     path,fn = filename.rsplit('/',1)
-                    generic_model,ext = fn.rsplit('.',1)
+                    generic_model = '.'.join(fn.split('.')[:2])
                     csv_field=headers[0]
                     generic_key=headers[0]
                     generic_field='content_object'
@@ -122,63 +151,78 @@ class Command(BaseCommand):
                     generic_model = generic_model_type.model_class()
                     generic_map[csv_field]=(generic_field,generic_model,generic_key)
                 except ContentType.DoesNotExist:
-                    print("Model does not exist - %s"%generic_model)
+                    self.stderr.write("Model does not exist - %s"%generic_model)
                     return 
-            print("importing file <%s> in as model <%s>"%(filename,requested_model))
+            self.stdout.write("importing file <%s> in as model <%s>"%(filename,requested_model))
             start_time = time.time()
 
             failed = []
             success = []
             skipped = []
-            for i,row in enumerate(reader):   # iterates the rows of the file in order
-                if len(failed) > 100:
-                    print('something has gone terribly wrong.') 
-                    break
-                if lines:
-                    if i < lines[0]:
-                        continue
-                    elif i >= lines[1]:
+            with transaction.atomic(), create_revision():
+                for i,row in enumerate(reader):   # iterates the rows of the file in order
+                    if len(failed) > 100:
+                        self.stderr.write('something has gone terribly wrong.') 
                         break
-                    
-                special_starts = (  '_', # ignored column
-                                    '+', # many-to-many id field
-                                    '=', # assign value to a property after saving
-                                    #'*', # Generics
-                                )
-                if update_keys:
-                    update_vals = dict(  [(clean(key),clean(val))
-                                for key,val in zip(headers,row)
-                                if key in update_keys])
-                else:
-                    update_vals = []
-                    
-                values = dict(  [(clean(key),clean(val))
-                                for key,val in zip(headers,row)
-                                if '.' not in key
-                                    and not clean(key).startswith(special_starts)
-                                    and not val == ''
-                                    and clean(key) not in generic_map.keys()])
-                rels = dict([   (clean(key),clean(val))
-                                for key,val in zip(headers,row)
-                                if '.' in key and not clean(key).startswith(special_starts)])
-                many = dict([   (clean(key),clean(val))
-                                for key,val in zip(headers,row)
-                                if '.' not in key
-                                    and clean(key).startswith('+')
-                                    and not val == ''])
-                funcs = dict([   (clean(key),clean(val))
-                                for key,val in zip(headers,row)
-                                if '.' not in key
-                                    and clean(key).startswith('=')
-                                    and not val == ''])
-                generics = dict([   (clean(key),clean(val))
-                                for key,val in zip(headers,row)
-                                if '.' not in key
-                                    and clean(key) in generic_map.keys()
-                                    and not val == ''])
-
-                try:
-                    with transaction.atomic():
+                    if lines:
+                        if i < lines[0]:
+                            continue
+                        elif i >= lines[1]:
+                            break
+                        
+                    special_starts = (  '_', # ignored column
+                                        '+', # many-to-many id field
+                                        '=', # assign value to a property after saving
+                                        #'*', # Generics
+                                    )
+                    if update_keys:
+                        update_vals = dict(  [(clean(key),clean(val))
+                                    for key,val in zip(headers,row)
+                                    if key in update_keys])
+                    else:
+                        update_vals = []
+                        
+                    values = dict(  [(clean(key),clean(val))
+                                    for key,val in zip(headers,row)
+                                    if '.' not in key
+                                        and not clean(key).startswith(special_starts)
+                                        and not val == ''
+                                        and clean(key) not in generic_map.keys()])
+                    rels = dict([   (clean(key),clean(val))
+                                    for key,val in zip(headers,row)
+                                    if '.' in key and not clean(key).startswith(special_starts)])
+                    many = dict([   (clean(key),clean(val))
+                                    for key,val in zip(headers,row)
+                                    if '.' not in key
+                                        and clean(key).startswith('+')
+                                        and not val == ''])
+                    funcs = dict([   (clean(key),clean(val))
+                                    for key,val in zip(headers,row)
+                                    if '.' not in key
+                                        and clean(key).startswith('=')
+                                        and not val == ''])
+                    generics = dict([   (clean(key),clean(val))
+                                    for key,val in zip(headers,row)
+                                    if '.' not in key
+                                        and clean(key) in generic_map.keys()
+                                        and not val == ''])
+    
+                    try:
+                        for key,val in values.items():
+                            try:
+                                f = model._meta.get_field(key)
+                                if f.__class__ == DateField: # and values[key] != "":
+                                    date_value = values[key]
+                                    try:
+                                        # we need to coerce date values into actual python date constructs for reversion not to fail
+                                        values[key] = datetime.datetime.strptime(date_value,options['date_format']).date()
+                                    except:
+                                        # if we can't coerce it just hope for the best.
+                                        if verbosity>=2:
+                                            self.stdout.write("Date coersion failed on line %s for field %s"%(i,h))
+                                        values[key] = date_value
+                            except FieldDoesNotExist:
+                                pass
                         # We might be trying to make a new thing that requires a foreign key
                         # Lets construct it instead and try that....
                         fk_fields = [f for f in model._meta.fields if f.__class__ == ForeignKey]
@@ -206,13 +250,13 @@ class Command(BaseCommand):
                             sub_model = ContentType.objects.get(app_label=app,model=sub_model_name).model_class()
                             rel_obj,c = sub_model.objects.get_or_create(**dict(fields))
                             if c and verbosity >=2:
-                                print('created sub item - %s - %s'%(sub_model,rel_obj))
+                                self.stdout.write('created sub item - %s - %s'%(sub_model,rel_obj))
                                 if verbosity >= 3:
                                     print('   from %s'%dict(fields))
                             values[field_name] = rel_obj
                         if self.debug_mode:
                             print(values)
-
+    
                         if generics:
                             for field,val in generics.items():
                                 field = field.strip('*')
@@ -224,7 +268,7 @@ class Command(BaseCommand):
                         else:
                             if update_vals:
                                 obj,created = model.objects.update_or_create(defaults=values,**update_vals)
-                                print('updated',obj)
+                                self.stdout.write('updated %s'%obj)
                             else:
                                 obj,created = model.objects.get_or_create(**values)
                         for field_name,val in many.items():
@@ -244,28 +288,28 @@ class Command(BaseCommand):
                             obj.save()
                         else:
                             if verbosity>=2:
-                                print("Line %s - skipped"%i)
-                                print(verbosity)
+                                self.stdout.write("Line %s - skipped"%i)
                             if verbosity==3:
-                                print(row)
+                                self.stdout.write('%s'%row)
                             skipped.append(i)
+                    except Exception as e:
+                        if verbosity >=2:
+                            self.stderr.write("Line %s - %s"%(i,e))
+                        if self.debug_mode:
+                            raise
+                        failed.append(i)
                     # end transaction
-                except Exception as e:
-                    if verbosity >=2:
-                        print("Line %s - %s"%(i,e))
-                    if self.debug_mode:
-                        raise
-                    failed.append(i)
+
         elapsed_time = time.time() - start_time
-        print("Summary:")
+        self.stdout.write("Summary:")
         if verbosity >=1:
-            print("  Time taken: %.3f seconds"%elapsed_time)
-        print("  Success: %s"%len(success))
+            self.stdout.write("  Time taken: %.3f seconds"%elapsed_time)
+        self.stdout.write("  Success: %s"%len(success))
         if skipped:
-            print("  Skipped: %s"%len(skipped))
+            self.stdout.write("  Skipped: %s"%len(skipped))
         if failed:
-            print("  Failed: %s"%len(failed))
-            print("  Failed on lines: %s"%str(failed))
+            self.stdout.write("  Failed: %s"%len(failed))
+            self.stdout.write("  Failed on lines: %s"%str(failed))
 
 def clean(string):
-    return string.strip('"').strip().replace("\"","")
+    return string.decode('utf-8').strip('"').strip().replace("\"","")
