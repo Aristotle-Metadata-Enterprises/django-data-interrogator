@@ -1,0 +1,30 @@
+{% load data_interrogator_tags %}
+
+<table class="table interrogation_room">
+    <thead>
+        <tr>
+            <th></th>
+            {% for col in col_head %}
+                {% for cat,text in col.items %}
+                <th>{{ text }}</th>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row,vals in rows.items %}
+        <tr>
+            <th>{{row}}</th>
+            {% for col,val in vals.items %}
+                <td>
+                    {{val.count}}
+                    {% for k,v in val.aggs %}
+                        <br>
+                        {{k}}:{{v}}
+                    {% endfor %}
+                </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

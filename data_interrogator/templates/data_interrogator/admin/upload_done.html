@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+
+<!-- LOADING -->
+{% load i18n grp_tags log %}
+
+<!-- JAVASCRIPTS -->
+{% block javascripts %}
+    {{ block.super }}
+    <!-- Data interoggator scripts -->
+{% endblock %}
+
+<!-- COLTYPE/BODYCLASS-- >
+{% block bodyclass %}dashboard{% endblock %}
+{% block content-class %}content-grid{% endblock %}
+
+<!-- BREADCRUMBS -->
+{% block breadcrumbs %}
+    <ul class="grp-horizontal-list">
+        <li><a href="{% url 'admin:index' %}">{% trans "Home" %}</a></li>
+        <li>Data uploader - done</li>
+    </ul>
+{% endblock %}
+{% block content_title %}
+    <header><h1>Data uploader</h1></header>
+{% endblock %}
+
+<!-- CONTENT -->
+{% block content %}
+<p>
+I uploaded the file (not really).
+
+<pre>
+    {{output}}
+</pre>
+<pre>
+    {{errs}}
+</pre>
+</p>
+{% endblock %}
