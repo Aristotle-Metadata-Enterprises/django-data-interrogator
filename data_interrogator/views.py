@@ -113,6 +113,9 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             "sum":Sum,
             'avg':Avg,
             "count":Count,
+            "substr":func.Substr,
+            "concat":db.Concat,
+            "join":func.Concat,
         }
     expression_columns = []
     for column in columns:
@@ -133,7 +136,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
         column = normalise_field(column).lower()
         if var_name is None:
             var_name = column
-        
+        print column
         if column.startswith(tuple([a+'___' for a in available_annotations.keys()])) and  " - " in column:
             # we're aggregating some mathy things, these are tricky
             split = column.split('___')
@@ -162,6 +165,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             output_columns.append(var_name)
             expression_columns.append(var_name)
         elif column.startswith(tuple([a+'___' for a in available_annotations.keys()])):
+            print "-------------------------------------------------------------------"
             agg,field = column.split('___',1)
             if agg == 'join':
                 fields = []

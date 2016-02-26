@@ -2,6 +2,8 @@ from django import template
 from django.core.urlresolvers import reverse, resolve
 from django.template import Context
 from django.template.loader import get_template
+from django.utils.safestring import mark_safe
+
 
 register = template.Library()
 
@@ -26,7 +28,7 @@ def clean_column_name(column_name):
         column_name = column_name.replace('___','(<wbr>')+')'
     column_name = column_name.replace('__','.').replace('_',' ')
     column_name = column_name.replace(".",'<wbr>.')
-    return column_name
+    return mark_safe(column_name)
 
 @register.simple_tag(takes_context=True)
 def wrap_sheet(context,data,field):
