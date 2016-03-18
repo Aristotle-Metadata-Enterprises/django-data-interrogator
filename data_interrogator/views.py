@@ -136,7 +136,6 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
         column = normalise_field(column).lower()
         if var_name is None:
             var_name = column
-        print column
         if column.startswith(tuple([a+'___' for a in available_annotations.keys()])) and  " - " in column:
             # we're aggregating some mathy things, these are tricky
             split = column.split('___')
@@ -145,7 +144,12 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             a,b = field.split(' - ')
 
             if a.endswith('date') and b.endswith('date'):
-                expr = ExpressionWrapper(db.ForceDate(F(a))-db.ForceDate(F(b)), output_field=DurationField())
+                expr = ExpressionWrapper(
+                    db.DateDiff(
+                        db.ForceDate(F(a)),
+                        db.ForceDate(F(b))
+                    ), output_field=DurationField()
+                )
             else:
                 expr = ExpressionWrapper(F(a)-F(b), output_field=CharField())
             
@@ -158,14 +162,19 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
         elif " - " in column:
             a,b = column.split(' - ')
             if a.endswith('date') and b.endswith('date'):
-                annotations[var_name] = ExpressionWrapper(db.ForceDate(F(a))-db.ForceDate(F(b)), output_field=DurationField())
+                annotations[var_name] = ExpressionWrapper(
+                    db.DateDiff(
+                        db.ForceDate(F(a)),
+                        db.ForceDate(F(b))
+                    ),
+                    output_field=DurationField()
+                )
             else:
                 annotations[var_name] = ExpressionWrapper(F(a)-F(b), output_field=CharField())
             query_columns.append(var_name)
             output_columns.append(var_name)
             expression_columns.append(var_name)
         elif column.startswith(tuple([a+'___' for a in available_annotations.keys()])):
-            print "-------------------------------------------------------------------"
             agg,field = column.split('___',1)
             if agg == 'join':
                 fields = []
@@ -302,6 +311,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             lim = abs(int(limit))
             rows = rows[:lim]
         rows = rows.values(*query_columns)
+
         count = rows.count()
         rows[0] #force a database hit to check the state of things
     except ValueError,e:
@@ -320,7 +330,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             errors.append("An error was found with your query:\n%s"%e)
     except Exception,e:
         rows = []
-        #raise
+        raise
         errors.append("Something when wrong - %s"%e)
 
     return {'rows':rows,'count':count,'columns':output_columns,'errors':errors, 'suspect':suspect_data,'headers':headers }

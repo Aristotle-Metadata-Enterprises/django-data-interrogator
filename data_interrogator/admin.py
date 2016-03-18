@@ -112,4 +112,4 @@ def export_selected_objects(modeladmin, request, queryset):
     ct = ContentType.objects.get_for_model(queryset.model)
     return HttpResponseRedirect("/export/?ct=%s&ids=%s" % (ct.pk, ",".join(selected)))
 
-admin.site.add_action(export_selected_objects)
+#admin.site.add_action(export_selected_objects)

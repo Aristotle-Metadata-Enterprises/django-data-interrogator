@@ -17,6 +17,12 @@ class Concat(Aggregate):
             distinct='DISTINCT ' if distinct else '',
             output_field=CharField(),
             **extra)
+    def as_microsoft(self, compiler, connection):
+        self.function = 'max' #dbo.GROUP_CONCAT'
+        self.template = '%(function)s(%(expressions)s)'
+        x = super(Concat, self).as_sql(compiler, connection)
+        return x
+
 
 # SQLite function to force a date time subtraction to come out correctly.
 # This just returns the expression on every other database backend.
@@ -24,14 +30,41 @@ class Concat(Aggregate):
 class ForceDate(Func):
     function = ''
     template = "%(expressions)s"
+    arity = 1
     def __init__(self, expression, **extra):
         self.__expression = expression
         super(ForceDate, self).__init__(expression, **extra)
 
     def as_sqlite(self, compiler, connection):
-        self.function = 'julianday'
-        self.template = 'coalesce(%(function)s(%(expressions)s),julianday())*24*60*60*1000*1000' # Convert julian day to microseconds as used by Django DurationField
+        self.function = ''
+        self.template = 'coalesce(julianday(%(expressions)s),julianday())*24*60*60*1000*1000' # Convert julian day to microseconds as used by Django DurationField
         return super(ForceDate, self).as_sql(compiler, connection)
+
+    def as_microsoft(self, compiler, connection):
+        self.function = ''
+        self.template = 'coalesce(%(expressions)s,GETDATE())' #*24*60*60*1000*1000' # Convert julian day to microseconds as used by Django DurationField
+        return super(ForceDate, self).as_sql(compiler, connection)
+
+
+class DateDiff(Func):
+    function = ''
+    template = '%(expressions)s'
+    arg_joiner = ' - '
+    arity = 2
+
+    def __init__(self, start, end):
+        super(DateDiff, self).__init__(start, end)
+
+    def as_microsoft(self, compiler, connection):
+        self.template = 'cast(DateDiff(day,%(expressions)s) as float)* -1 *24*60*60*1000.0*1000.0' # Convert to microseconds as used by Django DurationField'
+        self.arg_joiner = ', '
+        return super(DateDiff, self).as_sql(compiler, connection)
+
+    def as_sql(self, compiler, connection, function=None, template=None):
+        if connection.vendor is 'microsoft':
+            return self.as_microsoft(compiler, connection)
+        return super(DateDiff, self).as_sql(compiler, connection)
+
 
 class NotEqual(Lookup):
     lookup_name = 'ne'
