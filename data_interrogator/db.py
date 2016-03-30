@@ -17,11 +17,11 @@ class Concat(Aggregate):
             distinct='DISTINCT ' if distinct else '',
             output_field=CharField(),
             **extra)
+
     def as_microsoft(self, compiler, connection):
-        self.function = 'max' #dbo.GROUP_CONCAT'
+        self.function = 'max' #  MSSQL doesn't support GROUP_CONCAT yet.
         self.template = '%(function)s(%(expressions)s)'
-        x = super(Concat, self).as_sql(compiler, connection)
-        return x
+        return super(Concat, self).as_sql(compiler, connection)
 
 
 # SQLite function to force a date time subtraction to come out correctly.

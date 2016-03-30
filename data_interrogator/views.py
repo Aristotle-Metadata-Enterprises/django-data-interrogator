@@ -321,7 +321,6 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
         rows = []
         errors.append("No rows returned for your query, try broadening your search.")
     except exceptions.FieldError,e:
-        #raise
         rows = []
         if str(e).startswith('Cannot resolve keyword'):
             field = str(e).split("'")[1]
@@ -330,7 +329,6 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             errors.append("An error was found with your query:\n%s"%e)
     except Exception,e:
         rows = []
-        raise
         errors.append("Something when wrong - %s"%e)
 
     return {'rows':rows,'count':count,'columns':output_columns,'errors':errors, 'suspect':suspect_data,'headers':headers }
