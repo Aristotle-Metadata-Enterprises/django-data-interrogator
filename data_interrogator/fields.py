@@ -12,11 +12,16 @@ class MultipleCharInput(MultiWidget):
         js = ('multicharfield/multicharfield.js',)
         css = {'all': ('multicharfield/multicharfield.css',)}
 
-    def __init__(self, extra=1, add_text="Add field", remove_text="x",remove_title="remove field", attrs={}, *args, **kwargs):
+    template_multi_char = "data_interrogator/multichar.html"
+    template_multi_char_field = "data_interrogator/multicharfield.html"
+    
+    def __init__(self, extra=1, add_text="Add field", remove_text="x", remove_title="remove field", attrs={}, *args, **kwargs):
         self.extra = int(extra)
         self.add_text = add_text
         self.remove_text = remove_text
         self.remove_title = remove_title
+        self.template_multi_char = kwargs.pop('template_multi_char', self.template_multi_char)
+        self.template_multi_char_field = kwargs.pop('template_multi_char', self.template_multi_char_field)
         widgets = self.get_widgets(self.extra,attrs)
         super(MultipleCharInput,self).__init__(widgets, attrs=None,*args, **kwargs)
 
@@ -54,26 +59,33 @@ class MultipleCharInput(MultiWidget):
             output.append(html)
         html = mark_safe(self.format_output(output))
         blank_widget = self.render_field(name=name)
-        return mark_safe(get_template("data_interrogator/multichar.html").render(
-                Context({'id':name,'html':html,'blank_widget':blank_widget,'add_text':self.add_text})
+        return mark_safe(get_template(self.template_multi_char).render(
+                {'id':name,'html':html,'blank_widget':blank_widget,'add_text':self.add_text}
             ))
 
     def value_from_datadict(self, data, files, name):
-        values = [v for v in data.getlist(name) if v != ""]
-        return values
+        if type(data ) != type({}):
+            values = [v for v in data.getlist(name) if v != ""]
+            return values
+        return []
 
     def render_field(self, name, widget_value=None, final_attrs={}):
         if widget_value is None:
             widget_value = ""
         attrs = " ".join(["%s='%s'"%(key,val) for key,val in final_attrs])
-        return get_template("data_interrogator/multicharfield.html").render(
-                Context({   'remove_text':self.remove_text,
-                            'remove_title':self.remove_title,
-                            'name':name,
-                            'value':widget_value,
-                            'attrs':attrs
-                        })
-            )
+        return get_template(self.template_multi_char_field).render(
+            {   'remove_text':self.remove_text,
+                'remove_title':self.remove_title,
+                'name':name,
+                'value':widget_value,
+                'attrs':attrs
+            }
+        )
+
+
+class AdminMultipleCharInput(MultipleCharInput):
+    template_multi_char = "data_interrogator/admin/multichar.html"
+    template_multi_char_field = "data_interrogator/admin/multicharfield.html"
 
 class MultipleCharField(MultiValueField):
     widget = MultipleCharInput
@@ -93,3 +105,7 @@ class MultipleCharField(MultiValueField):
 
     def clean(self, value):
         return value
+
+
+class AdminMultipleCharField(MultipleCharField):
+    widget = AdminMultipleCharInput

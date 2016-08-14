@@ -6,27 +6,56 @@ from django.template import Context
 from django.utils.translation import ugettext_lazy as _
 
 import models
-from fields import MultipleCharField
+from fields import MultipleCharField, AdminMultipleCharInput
 
-suspects = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('suspects',[])
 
-SUSPECTS = []
-for suspect in suspects:
-    app,model = suspect['model']
-    SUSPECTS.append(("%s:%s"%(app,model),model))
+class InterrogatorForm(forms.Form):
+    lead_suspect = forms.ChoiceField(choices=[],required=True,label="Initial object")
+    def __init__(self, *args, **kwargs):
+        super(InterrogatorForm, self).__init__(*args, **kwargs)
+        self.fields['lead_suspect'].choices = self.suspects
 
-class InvestigationForm(forms.Form):
-    lead_suspect = forms.ChoiceField(choices=SUSPECTS,required=True,label="Initial object")
+    @property
+    def suspects(self):
+        suspects = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('suspects',[])
+        
+        SUSPECTS = []
+        for suspect in suspects:
+            app,model = suspect['model']
+            SUSPECTS.append(("%s:%s"%(app,model),model))
+        return SUSPECTS
+
+
+class InterrogatorTableForm(InterrogatorForm):
     filter_by = MultipleCharField(extra=1,required=False, add_text="Add filter", remove_title="Remove filter", remove_text="-")
     columns = MultipleCharField(extra=2,required=False, add_text="Add column", remove_title="Remove column", remove_text="-")
     sort_by = MultipleCharField(extra=1,required=False, add_text="Add ordering", remove_title="Remove ordering", remove_text="-")
 
-class PivotTableForm(forms.Form):
+
+class AdminInvestigationForm(InterrogatorTableForm):
+    lead_suspect = forms.ChoiceField(choices=[],required=True,label="Base query object")
+    def __init__(self, *args, **kwargs):
+        super(AdminInvestigationForm, self).__init__(*args, **kwargs)
+        self.fields['filter_by'].widget = AdminMultipleCharInput()
+        self.fields['columns'].widget = AdminMultipleCharInput()
+        self.fields['sort_by'].widget = AdminMultipleCharInput()
+
+
+class InvestigationForm(InterrogatorTableForm):
+    pass
+
+
+class PivotTableForm(InterrogatorForm):
     filter_by = MultipleCharField(extra=1,required=False, add_text="Add filter", remove_title="Remove filter", remove_text="-")
-    lead_suspect = forms.ChoiceField(choices=SUSPECTS,required=True,label="Initial object")
     column_1 = forms.CharField()
     column_2 = forms.CharField()
     aggregators = MultipleCharField(extra=1,required=False, add_text="Add column", remove_title="Remove column", remove_text="-")
+
+class AdminPivotTableForm(PivotTableForm):
+    def __init__(self, *args, **kwargs):
+        super(AdminPivotTableForm, self).__init__(*args, **kwargs)
+        self.fields['filter_by'].widget = AdminMultipleCharInput()
+        self.fields['aggregators'].widget = AdminMultipleCharInput()
 
 class DataTablePageForm(forms.ModelForm):
     url = forms.RegexField(label=_("URL"), max_length=100, regex=r'^[-\w/\.~]+$',
@@ -75,7 +104,6 @@ class DataTablePageForm(forms.ModelForm):
 
 class UploaderForm(forms.Form):
 
-                        
     main_model = forms.ChoiceField(choices=[],required=True,label="Main model")
     separator = forms.ChoiceField(choices=[('comma','comma'),('tab','tab'),('other','other')],required=True,label="Delimiter",help_text='The character used to indicate separate columns in the file.')
     other_separator = forms.CharField(required=False,label="Other separator",help_text="Only add if 'other' is selected above")
