@@ -1,5 +1,4 @@
 from django.contrib import admin
-#from django.contrib.flatpages.admin import FlatpageForm, FlatPageAdmin
 from django.forms.models import BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
 import models, forms
@@ -101,15 +100,6 @@ class DataTableAdmin(admin.ModelAdmin):
     list_filter = ('columns',)
     search_fields = ('title',)
 
-#admin.site.register(models.DataTablePage,DataTablePageAdmin)
-
+admin.site.register(models.DataTablePage,DataTablePageAdmin)
 
 admin.site.register(models.DataTable,DataTableAdmin)
-
-
-def export_selected_objects(modeladmin, request, queryset):
-    selected = request.POST.getlist(admin.ACTION_CHECKBOX_NAME)
-    ct = ContentType.objects.get_for_model(queryset.model)
-    return HttpResponseRedirect("/export/?ct=%s&ids=%s" % (ct.pk, ",".join(selected)))
-
-#admin.site.add_action(export_selected_objects)

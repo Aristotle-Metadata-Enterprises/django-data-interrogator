@@ -1,8 +1,9 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
+from . import views
 
-urlpatterns = patterns('data_interrogator.views',
+urlpatterns = [
     #url(r'^room/$', 'data_interrogator.views.custom_table', name='custom_table'),
-    url(r'^column_generator/$', 'column_generator', name='column_generator'),
-    url(r'^table(?P<url>/.*/)?$', 'datatable', name='datatable'),
-    url(r'^pivot/$', 'pivot_table', name='pivot'),
-)
+    url(r'^column_generator/$', views.column_generator, name='column_generator'),
+    url(r'^table(?P<url>/.*/)?$', views.datatable, name='datatablepage'),
+    url(r'^pivot/$', views.pivot_table, name='pivot'),
+]

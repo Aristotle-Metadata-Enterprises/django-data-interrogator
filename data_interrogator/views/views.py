@@ -17,8 +17,8 @@ import tempfile, os
 
 from datetime import timedelta
 
-from data_interrogator import db, forms
-import data_interrogator
+from data_interrogator.forms import AdminInvestigationForm, InvestigationForm
+from data_interrogator.db import GroupConcat, DateDiff, ForceDate
 
 # Because of the risk of data leakage from User, Revision and Version tables,
 # If a django user hasn't explicitly set up a witness protecion program,
@@ -50,11 +50,12 @@ def column_generator(request):
     return JsonResponse({'model': model,'fields':fields,'related_models':related_models})
 
 def interrogation_room(request,template='data_interrogator/custom.html'):
-    return InterrogationRoom.as_view(template=template)
+    return InterrogationRoom.as_view(template_name=template)(request)
     
 class InterrogationRoom(View):
-    form_class = forms.InvestigationForm
-    
+    form_class = InvestigationForm
+    template_name = 'data_interrogator/interrogation_room.html'
+
     def get(self, request):
         data = {}
         form = self.form_class()
@@ -81,12 +82,12 @@ class InterrogationRoom(View):
                 else:
                     data = interrogate(suspect,columns=columns,filters=filters,order_by=order_by)
         data['form']=form
-        return render(request, self.template, data)
+        return render(request, self.template_name, data)
 
 
 class AdminInterrogationRoom(InterrogationRoom):
-    template = 'data_interrogator/admin/analytics.html'
-    form_class = forms.AdminInvestigationForm
+    template_name = 'data_interrogator/admin/analytics.html'
+    form_class = AdminInvestigationForm
 
     @method_decorator(user_passes_test(lambda u: u.is_staff))
     def get(self, request):
@@ -133,7 +134,7 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             'avg':Avg,
             "count":Count,
             "substr":func.Substr,
-            "concat":db.Concat,
+            "concat":GroupConcat,
             "join":func.Concat,
         }
     expression_columns = []
@@ -164,9 +165,9 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
 
             if a.endswith('date') and b.endswith('date'):
                 expr = ExpressionWrapper(
-                    db.DateDiff(
-                        db.ForceDate(F(a)),
-                        db.ForceDate(F(b))
+                    DateDiff(
+                        ForceDate(F(a)),
+                        ForceDate(F(b))
                     ), output_field=DurationField()
                 )
             else:
@@ -182,9 +183,9 @@ def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None)
             a,b = column.split(' - ')
             if a.endswith('date') and b.endswith('date'):
                 annotations[var_name] = ExpressionWrapper(
-                    db.DateDiff(
-                        db.ForceDate(F(a)),
-                        db.ForceDate(F(b))
+                    DateDiff(
+                        ForceDate(F(a)),
+                        ForceDate(F(b))
                     ),
                     output_field=DurationField()
                 )
@@ -367,33 +368,7 @@ def clean_sort_columns(text):
 
 
 
-def interrogation_room(request,template='data_interrogator/custom.html'):
-    data = {}
-    form = forms.InvestigationForm()
-    has_valid_columns = any([True for c in request.GET.getlist('columns',[]) if c != ''])
-    if request.method == 'GET' and has_valid_columns:
-        # create a form instance and populate it with data from the request:
-        form = forms.InvestigationForm(request.GET)
-        # check whether it's valid:
-        if form.is_valid():
-            # process the data in form.cleaned_data as required
-            filters = form.cleaned_data.get('filter_by',[])
-            order_by = form.cleaned_data.get('sort_by',[])
-            columns = form.cleaned_data.get('columns',[])
-            suspect = form.cleaned_data['lead_suspect']
-            if request.user.is_superuser and request.GET.get('action','') == 'makestatic':
-                # populate the appropriate GET variables and redirect to the admin site
-                base = reverse("admin:data_interrogator_datatable_add")
-                vals = QueryDict('', mutable=True)
-                vals.setlist('columns',columns)
-                vals.setlist('filters',filters)
-                vals.setlist('orders',order_by)
-                vals['base_model'] = suspect
-                return redirect('%s?%s'%(base,vals.urlencode()))
-            else:
-                data = interrogate(suspect,columns=columns,filters=filters,order_by=order_by)
-    data['form']=form
-    return render(request, template, data)
+
     
 def datatable(request,url):
     table = get_object_or_404(data_interrogator.models.DataTablePage, url=url)
@@ -413,12 +388,13 @@ def datatable(request,url):
 
 
 def pivot_table(request,template='data_interrogator/pivot.html'):
+    from forms import PivotTableForm
     data = {}
-    form = forms.PivotTableForm()
+    form = PivotTableForm()
 
     if request.method == 'GET':
         # create a form instance and populate it with data from the request:
-        form = forms.PivotTableForm(request.GET)
+        form = PivotTableForm(request.GET)
         # check whether it's valid:
         if form.is_valid():
             # process the data in form.cleaned_data as required

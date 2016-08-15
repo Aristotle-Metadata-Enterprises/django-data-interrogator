@@ -80,5 +80,5 @@ class DataTablePage(DataTable):
         return "%s - %s" % (self.url, self.title)
 
     def get_absolute_url(self):
-        return reverse('data_interrogator:datatable', kwargs={'url': self.url})
+        return reverse('data_interrogator:datatablepage', kwargs={'url': self.url})
             

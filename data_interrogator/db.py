@@ -6,13 +6,13 @@ from django.db.models.expressions import Func
 
 # This is different to the built in Django Concat command, as that concats columns in a row
 # This concats one column from a selection of rows together.
-class Concat(Aggregate):
+class GroupConcat(Aggregate):
     # supports COUNT(distinct field)
     function = 'GROUP_CONCAT'
     template = '%(function)s(%(distinct)s%(expressions)s)'
     
     def __init__(self, expression, distinct=False, **extra):
-        super(Concat, self).__init__(
+        super(GroupConcat, self).__init__(
             expression,
             distinct='DISTINCT ' if distinct else '',
             output_field=CharField(),
@@ -21,7 +21,7 @@ class Concat(Aggregate):
     def as_microsoft(self, compiler, connection):
         self.function = 'max' #  MSSQL doesn't support GROUP_CONCAT yet.
         self.template = '%(function)s(%(expressions)s)'
-        return super(Concat, self).as_sql(compiler, connection)
+        return super(GroupConcat, self).as_sql(compiler, connection)
 
 
 # SQLite function to force a date time subtraction to come out correctly.
