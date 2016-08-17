@@ -36,7 +36,6 @@ setup(
     keywords='django data analytics',
     install_requires=[
         'django', # I mean obviously you'll have django installed if you want to use this.
-        'django-autocomplete-light>=3.0.0'
     ]
 
 )

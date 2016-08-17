@@ -11,3 +11,66 @@ div.multichar > input[type=text] {
     border:none;
     margin:0px 0px;
 }
+
+
+span.twitter-typeahead {
+    position:static !important;
+    display:inline !important;
+}
+
+
+
+.tt-hint {
+visibility:hidden;
+}
+.tt-input {
+    background:white !important;
+}
+
+/* From twitter typeahead */
+
+
+.typeahead {
+  background-color: #fff;
+}
+
+.typeahead:focus {
+  border: 2px solid #0097cf;
+}
+
+.tt-menu {
+  font-size:12pt;
+  width: 100%;
+  margin: 0 0;
+  background-color: #fff;
+  border: 1px solid #ccc !important;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  -webkit-border-radius: 0 0 8px 8px;
+     -moz-border-radius: 0 0 8px 8px;
+          border-radius: 0 0 8px 8px;
+  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+     -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+          box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+.tt-suggestion {
+  padding: 3px 20px;
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.tt-suggestion:hover {
+  cursor: pointer;
+  color: #fff;
+  background-color: #0097cf;
+}
+
+.tt-suggestion.tt-cursor {
+  color: #fff;
+  background-color: #0097cf;
+
+}
+
+.tt-suggestion p {
+  margin: 0;
+}

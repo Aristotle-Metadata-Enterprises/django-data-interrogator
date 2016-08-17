@@ -9,8 +9,15 @@ DELIMITER="||"
 
 class MultipleCharInput(MultiWidget):
     class Media:
-        js = ('multicharfield/multicharfield.js',)
-        css = {'all': ('multicharfield/multicharfield.css',)}
+        js = (
+            '//cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/0.11.1/typeahead.bundle.js',
+            'data_interrogator/multicharfield.js',
+        )
+        css = {
+            'all': (
+                'multicharfield/multicharfield.css',
+            )
+        }
 
     template_multi_char = "data_interrogator/multichar.html"
     template_multi_char_field = "data_interrogator/multicharfield.html"
