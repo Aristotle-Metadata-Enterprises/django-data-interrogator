@@ -16,8 +16,8 @@ class MultipleCharInput(MultiWidget):
         )
         css = {
             'all': (
-                'multicharfield/multicharfield.css',
-                'multicharfield/multicharfield.public.css',
+                'data_interrogator/multicharfield.css',
+                'data_interrogator/multicharfield.public.css',
             )
         }
 
@@ -94,7 +94,8 @@ class MultipleCharInput(MultiWidget):
 
 class AdminMultipleCharInput(MultipleCharInput):
     class Media:
-        extend= False
+        # Extend is false as we need a specific order for the imports (namely jquery)
+        extend = False
         js = (
             'admin/js/vendor/jquery/jquery.js',
             'admin/js/jquery.init.js',
@@ -104,8 +105,8 @@ class AdminMultipleCharInput(MultipleCharInput):
         )
         css = {
             'all': (
-                'multicharfield/multicharfield.css',
-                'multicharfield/multicharfield.admin.css',
+                'data_interrogator/multicharfield.css',
+                'data_interrogator/multicharfield.admin.css',
             )
         }
     template_multi_char = "data_interrogator/admin/multichar.html"
