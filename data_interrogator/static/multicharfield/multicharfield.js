@@ -7,8 +7,9 @@ function addField(area) {
     }
 
     var new_column = area.getElementsByClassName('multicharblank')[0].children[0].cloneNode(true);
-    console.log(new_column)
     holding_cell.appendChild(new_column);
+    $(area).typeahead(null, typeahead_settings);
+
 }
 
 function removeField(field) {

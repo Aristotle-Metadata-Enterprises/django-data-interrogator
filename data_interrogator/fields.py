@@ -12,10 +12,12 @@ class MultipleCharInput(MultiWidget):
         js = (
             '//cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/0.11.1/typeahead.bundle.js',
             'data_interrogator/multicharfield.js',
+            'data_interrogator/multichar.public.js',
         )
         css = {
             'all': (
                 'multicharfield/multicharfield.css',
+                'multicharfield/multicharfield.public.css',
             )
         }
 
@@ -91,6 +93,21 @@ class MultipleCharInput(MultiWidget):
 
 
 class AdminMultipleCharInput(MultipleCharInput):
+    class Media:
+        extend= False
+        js = (
+            'admin/js/vendor/jquery/jquery.js',
+            'admin/js/jquery.init.js',
+            '//cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/0.11.1/typeahead.bundle.js',
+            'data_interrogator/multicharfield.js',
+            'data_interrogator/multichar.admin.js',
+        )
+        css = {
+            'all': (
+                'multicharfield/multicharfield.css',
+                'multicharfield/multicharfield.admin.css',
+            )
+        }
     template_multi_char = "data_interrogator/admin/multichar.html"
     template_multi_char_field = "data_interrogator/admin/multicharfield.html"
 

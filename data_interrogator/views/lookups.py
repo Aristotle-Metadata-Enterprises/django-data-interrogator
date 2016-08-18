@@ -6,20 +6,25 @@ from django.utils.translation import ugettext as _
 from django.views.generic import View
 import json
 import string
-
+from views import get_suspect
 
 class FieldLookupTypeahead(View):
         
-    def get(self, context):
-        """Return a JSON response in Select2 format."""
-        create_option = []
-
+    def get(self, request):
+        model_name = self.request.GET.get('model', None)
         q = self.request.GET.get('q', None)
-        
+
+        if not model_name or not q:
+            return http.HttpResponse(
+                json.dumps([]),
+                content_type='application/json',
+            )
+        model = get_suspect(*(model_name.lower().split(':')))
+
         # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
         prefix = ""
         if " " in q:
-            prefix,q = q.split(' ',1)
+            prefix,q = q.rsplit(' ',1)
             prefix = prefix+' '
         elif "(" in q:
             # ignore any command at the start
@@ -27,8 +32,6 @@ class FieldLookupTypeahead(View):
             prefix = prefix+'('
 
         args = q.split('.')
-        from parlhand.models import Person
-        model = Person
         if len(args) > 1:
             print args
             for a in args[:-1]:
@@ -61,7 +64,7 @@ class FieldLookupTypeahead(View):
                 'datatype': str(f.get_internal_type()),
             }
             out.append(data)
-        print out
+
         return http.HttpResponse(
             json.dumps(out),
             content_type='application/json',
