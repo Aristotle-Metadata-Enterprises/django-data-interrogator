@@ -11,10 +11,17 @@ from views import get_suspect
 class FieldLookupTypeahead(View):
         
     def get(self, request):
+        from django.conf import settings
+        witness_protection = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('witness_protection',["User","Revision","Version"])
         model_name = self.request.GET.get('model', None)
         q = self.request.GET.get('q', None)
 
         if not model_name or not q:
+            return http.HttpResponse(
+                json.dumps([]),
+                content_type='application/json',
+            )
+        if any("__%s"%witness.lower() in q for witness in witness_protection) or any(".%s"%witness.lower() in q for witness in witness_protection):
             return http.HttpResponse(
                 json.dumps([]),
                 content_type='application/json',
@@ -30,10 +37,13 @@ class FieldLookupTypeahead(View):
             # ignore any command at the start
             prefix,q = q.split('(',1)
             prefix = prefix+'('
+        elif "::" in q:
+            # ignore any command at the start
+            prefix,q = q.split('::',1)
+            prefix = prefix+'::'
 
         args = q.split('.')
         if len(args) > 1:
-            print args
             for a in args[:-1]:
                 model = [f for f in model._meta.get_fields() if f.name==a][0].related_model
 
@@ -41,6 +51,8 @@ class FieldLookupTypeahead(View):
 
         out = []
         for f in fields:
+            if any(witness.lower() == f.name for witness in witness_protection):
+                continue
             field_name = '.'.join(args[:-1]+[f.name])
             is_relation = False
             if f not in model._meta.fields:

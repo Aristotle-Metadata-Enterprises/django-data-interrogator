@@ -96,9 +96,9 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
         if '=' in column:
             var_name,column = column.split('=')
 
-        if column.startswith(tuple([a+'___' for a in available_annotations.keys()])) and  " - " in column:
+        if column.startswith(tuple([a+'::' for a in available_annotations.keys()])) and  " - " in column:
             # we're aggregating some mathy things, these are tricky
-            split = column.split('___')
+            split = column.split('::')
             aggs,field = split[0:-1],split[-1]
             agg = aggs[0]
             a,b = field.split(' - ')
@@ -113,8 +113,8 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
                 expr = ExpressionWrapper(F(a)-F(b), output_field=CharField())
                 annotations[var_name] = available_annotations[agg](expr, distinct=True)
 
-        elif column.startswith(tuple([a+'___' for a in available_annotations.keys()])):
-            agg,field = column.split('___',1)
+        elif column.startswith(tuple([a+'::' for a in available_annotations.keys()])):
+            agg,field = column.split('::',1)
             annotations[var_name] = available_annotations[agg](field, distinct=True)
 
         else:
@@ -126,13 +126,7 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
     filters_all = {}
     expression_columns = []
     for i,expression in enumerate(filters + [v['filter'] for k,v in aliases.items() if k in columns]):
-        cleaned = clean_filter(normalise_field(expression))
-        if '|' in cleaned:
-            field,exp = cleaned.split('|')
-            key,val = (field+exp).split("=",1)
-        else:
-            key,val = cleaned.split("=",1)
-            field = key
+        key,exp,val = clean_filter(normalise_field(expression))
         key = key.strip()
         val = val.strip()
         
@@ -146,9 +140,9 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
             else:
                 val = bool(val)
 
-        if '___' in field:
+        if '::' in field:
             # we got an annotated filter
-            agg,f = field.split('___',1)
+            agg,f = field.split('::',1)
             field = 'f%s%s'%(i,field)
             key = 'f%s%s'%(i,key)
             annotations[field] = available_annotations[agg](f, distinct=True)
