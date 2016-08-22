@@ -1,37 +1,10 @@
-{% extends 'parlhand/base.html' %}
-{% load parl_utils static %}
+{% extends 'base.html' %}
+{% load static %}
 {% load data_interrogator_tags %}
 
-{% block extra_script %}{% comment %}
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+{% block title %}Pivot Data Maker{% endblock %}
 
-<!-- for fancy tables -->
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/extensions/filter-control/bootstrap-table-filter-control.js"></script>
-<script src="//rawgit.com/hhurz/tableExport.jquery.plugin/master/tableExport.js"></script>
-
-<script src="//rawgit.com/kayalshri/tableExport.jquery.plugin/master/jquery.base64.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/extensions/export/bootstrap-table-export.js"></script>
-{% endcomment %}
-<link href="{% static "parlhand/lineup.css" %}" rel="stylesheet" type="text/css" />
-<script src="{% static "parlhand/lineup.js" %}"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/Sortable/1.2.1/Sortable.js"></script>
-{% endblock %}
-
-{% block meta_title %}Parliamentarian Data Explorer{% endblock %}
-
-{% block title %}Parliamentarian Data Explorer{% endblock %}
-{% block lead_type %}data{% endblock %}
-
-{% block main %}
-
-    <!-- div id="lead" class="row">
-    </div -->
+{% block content %}
     {% include "data_interrogator/lineup.html" %}
-    <div class="row">
     {% include 'data_interrogator/pivot_table.html' %}
-    </div>
 {% endblock %}

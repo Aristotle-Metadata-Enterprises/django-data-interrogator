@@ -331,6 +331,8 @@ def clean_filter(text):
     for a,b in maps:
         candidate = text.split(a)
         if len(candidate) == 2:
+            if a is "=":
+                return candidate[0], b, candidate[1]
             return candidate[0], '__%s'%b, candidate[1]
     return text
 
@@ -354,7 +356,7 @@ class InterrogationRoom(View):
                 order_by = form.cleaned_data.get('sort_by',[])
                 columns = form.cleaned_data.get('columns',[])
                 suspect = form.cleaned_data['lead_suspect']
-                if request.user.is_staff and request.GET.get('action','') == 'makestatic':
+                if hasattr(request, 'user') and request.user.is_staff and request.GET.get('action','') == 'makestatic':
                     # populate the appropriate GET variables and redirect to the admin site
                     base = reverse("admin:data_interrogator_datatable_add")
                     vals = QueryDict('', mutable=True)
@@ -402,23 +404,3 @@ def datatable(request,url):
     data['table'] = table
     return render(request, template, data)
 
-
-def pivot_table(request,template='data_interrogator/pivot.html'):
-    from forms import PivotTableForm
-    data = {}
-    form = PivotTableForm()
-
-    if request.method == 'GET':
-        # create a form instance and populate it with data from the request:
-        form = PivotTableForm(request.GET)
-        # check whether it's valid:
-        if form.is_valid():
-            # process the data in form.cleaned_data as required
-            aggregators = form.cleaned_data.get('aggregators',[])
-            columns = [form.cleaned_data.get('column_1'),form.cleaned_data.get('column_2')]
-            suspect = form.cleaned_data['lead_suspect']
-            filters = form.cleaned_data.get('filter_by',[])
-
-            data = pivot(suspect,columns=columns,filters=filters,aggregators=aggregators)
-    data['form']=form
-    return render(request, template, data)

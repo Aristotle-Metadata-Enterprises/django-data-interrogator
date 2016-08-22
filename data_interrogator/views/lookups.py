@@ -27,7 +27,7 @@ class FieldLookupTypeahead(View):
                 content_type='application/json',
             )
         model = get_suspect(*(model_name.lower().split(':')))
-
+        print model
         # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
         prefix = ""
         if " " in q:
@@ -48,7 +48,7 @@ class FieldLookupTypeahead(View):
                 model = [f for f in model._meta.get_fields() if f.name==a][0].related_model
 
         fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
-
+        print fields, model._meta.get_fields()
         out = []
         for f in fields:
             if any(witness.lower() == f.name for witness in witness_protection):
@@ -63,7 +63,7 @@ class FieldLookupTypeahead(View):
                 else:
                     help_text = help_text.lstrip('\n').split('\n')[0]
                     remove = string.whitespace.replace(' ','')
-                    help_text = help_text.translate(None,remove)
+                    help_text = str(help_text).translate(None,remove)
                     help_text = ' '.join([c for c in help_text.split(' ') if c])
             else:
                 help_text = str(f.help_text)

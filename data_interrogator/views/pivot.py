@@ -48,7 +48,7 @@ class AdminPivotTable(PivotTable):
     template_name = 'data_interrogator/admin/pivot.html'
 
 def pivot_table(request,template='data_interrogator/pivot.html'):
-    return PivotTable.as_view(template_name=template)
+    return PivotTable.as_view(template_name=template)(request)
 
 
 def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
@@ -126,6 +126,7 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
     filters_all = {}
     expression_columns = []
     for i,expression in enumerate(filters + [v['filter'] for k,v in aliases.items() if k in columns]):
+        print "-----%s-----"%expression
         key,exp,val = clean_filter(normalise_field(expression))
         key = key.strip()
         val = val.strip()
