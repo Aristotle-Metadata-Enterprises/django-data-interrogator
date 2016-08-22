@@ -1,4 +1,3 @@
-import pandas as pd
 import sqlparse
 from datetime import datetime
 from django.db import connection
@@ -16,20 +15,6 @@ class NotEqual(Lookup):
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
         return '%s != %s' % (lhs, rhs), params
-
-
-class SumIf(Sum):
-    """
-    Executes the equivalent of
-        Python: `Sum(Case(When(condition, then=field), default=None))`
-        SQL: `SUM(CASE WHEN condition THEN field ELSE NULL END)`
-    """
-    def __init__(self, field, condition=None, **lookups):
-        if lookups and condition is None:
-            condition = Q(**lookups)
-        case = Case(When(condition, then=field), default=None)
-        super().__init__(case)
-
 
 # @DateField.register_lookup
 # @DateTimeField.register_lookup
@@ -99,8 +84,3 @@ class SumIf(Sum):
 
 # def sql(queryset):
 #     return sqlparse.format(str(queryset.query), reindent=True)
-
-
-# def dataframe(queryset):
-#     return pd.DataFrame.from_records(queryset)
-# table = dataframe

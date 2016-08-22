@@ -3,6 +3,7 @@ from django.db.models import Lookup
 from django.db.models.fields import Field, DateField#, RelatedField
 from django.db.models.fields.related import RelatedField,ForeignObject,ManyToManyField
 from django.db.models.expressions import Func
+from django.db.models import Case, Lookup, Sum, Transform, Q, When
 
 # This is different to the built in Django Concat command, as that concats columns in a row
 # This concats one column from a selection of rows together.
@@ -22,6 +23,19 @@ class GroupConcat(Aggregate):
         self.function = 'max' #  MSSQL doesn't support GROUP_CONCAT yet.
         self.template = '%(function)s(%(expressions)s)'
         return super(GroupConcat, self).as_sql(compiler, connection)
+
+
+class SumIf(Sum):
+    """
+    Executes the equivalent of
+        Python: `Sum(Case(When(condition, then=field), default=None))`
+        SQL: `SUM(CASE WHEN condition THEN field ELSE NULL END)`
+    """
+    def __init__(self, field, condition=None, **lookups):
+        if lookups and condition is None:
+            condition = Q(**lookups)
+        case = Case(When(condition, then=field), default=0)
+        super(SumIf,self).__init__(case)
 
 
 # SQLite function to force a date time subtraction to come out correctly.
@@ -73,7 +87,7 @@ class NotEqual(Lookup):
         lhs, lhs_params = self.process_lhs(qn, connection)
         rhs, rhs_params = self.process_rhs(qn, connection)
         params = lhs_params + rhs_params
-        return '%s <> %s' % (lhs, rhs), params
+        return '%s != %s' % (lhs, rhs), params
 Field.register_lookup(NotEqual)
 RelatedField.register_lookup(NotEqual)
 ForeignObject.register_lookup(NotEqual)

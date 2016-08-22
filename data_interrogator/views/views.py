@@ -18,7 +18,7 @@ import tempfile, os
 from datetime import timedelta
 
 from data_interrogator.forms import AdminInvestigationForm, InvestigationForm
-from data_interrogator.db import GroupConcat, DateDiff, ForceDate
+from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
 
 # Because of the risk of data leakage from User, Revision and Version tables,
 # If a django user hasn't explicitly set up a witness protecion program,
@@ -63,6 +63,7 @@ class Interrogator():
             "substr":func.Substr,
             "group":GroupConcat,
             "concat":func.Concat,
+            "sumif":SumIf,
         }
     math_infix_symbols = ['-','+','/','*']
     errors = []
@@ -140,8 +141,8 @@ class Interrogator():
             if any("__%s__"%witness.lower() in column for witness in witness_protection):
                 continue # do nothing for protected models
             var_name = None
-            if '=' in column:
-                var_name,column = column.split('=',1)
+            if ':=' in column: #assigning a variable
+                var_name,column = column.split(':=',1)
             elif column in aliases.keys():
                 var_name = column
                 column = aliases[column]['column']
@@ -168,7 +169,15 @@ class Interrogator():
 
             elif column.startswith(tuple([a+'::' for a in self.available_annotations.keys()])):
                 agg,field = column.split('::',1)
-                if agg == 'join':
+                if agg == 'sumif':
+                    field,cond = field.split(',',1)
+                    field = normalise_field(field)
+                    conditions = {}
+                    for condition in cond.split(','):
+                        condition_key,condition_val = condition.split('=',1)
+                        conditions[normalise_field(condition_key)] = normalise_field(condition_val)
+                    annotations[var_name] = self.available_annotations[agg](field=F(field),**conditions)
+                elif agg == 'join':
                     fields = []
                     for f in field.split(','):
                         if f.startswith(('"',"'")):
@@ -203,7 +212,6 @@ class Interrogator():
             field,exp,val = clean_filter(normalise_field(expression))
             #key,val = cleaned.split("=",1)
             key = '%s%s'%(field.strip(),exp)
-            print key
             val = val.strip()
             
             if val.startswith('~'):
