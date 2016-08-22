@@ -27,6 +27,7 @@ class LoadSomePages(TestCase):
     def test_sumif(self):
         response = self.client.get("/data/room/?lead_suspect=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=&columns=name&columns=Salesperson%3A%3Dsale.seller.name&columns=NSW+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DNSW%29&columns=VIC+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DVIC%29")
         self.assertEqual(response.status_code, 200)
+        self.assertTrue('| name | Salesperson | NSW sales | VIC sales |' in response.content)
         self.assertTrue('| Winter Coat | Morty Smith | 1605.00 | 1782.00 |' in response.content)
 
         response = self.client.get("/data/room/?lead_suspect=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DVIC&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
