@@ -9,7 +9,7 @@ import string
 from .utils import get_suspect
 
 class FieldLookupTypeahead(View):
-        
+
     def get(self, request):
         from django.conf import settings
         witness_protection = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('witness_protection',["User","Revision","Version"])
