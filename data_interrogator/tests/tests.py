@@ -15,8 +15,23 @@ class TestInterrogators(TestCase):
     def test_page_pivot(self):
         response = self.client.get("/data/pivot/?lead_suspect=shop%3AProduct&filter_by=&filter_by=&column_1=sale.state&column_2=name&aggregators=profit%3Dsum%28sale.sale_price+-+cost_price%29")
         self.assertEqual(response.status_code, 200)
-        print response.content
-        self.assertTrue('| Beanie ||  119,  profit:1314 |  17,  profit:190 |  41,  profit:367 |  31,  profit:371 |  98,  profit:1050 |  11,  profit:122 |' in response.content)
+
+        self.assertTrue('| Beanie ||' in response.content)
+        beanie_values = [line for line in response.content.split('\n') if line.startswith('| Beanie ||')]
+        self.assertTrue(len(beanie_values) == 1)
+
+        beanie_values = [v.strip() for v in beanie_values[0].strip().split('|| ',1)[1].split(' | ')]
+
+        header = [line for line in response.content.split('\n') if line.startswith("| Header |")][0]
+        header = header.strip().split('|| ',1)[1].split(' | ')
+
+        expected_states = "NSW | SA | QLD | TAS | VIC | WA".split(" | ")
+        expected_values = "  119,  profit:1314 |  17,  profit:190 |  41,  profit:367 |  31,  profit:371 |  98,  profit:1050 |  11,  profit:122  "
+        expected_values = [v.strip() for v in expected_values.split("|")]
+        expected = dict(zip(expected_states,expected_values))
+
+        for state,val in zip(header, beanie_values):
+            self.assertTrue(expected[state] == val)
 
     def test_page_sumif(self):
         response = self.client.get("/data/room/?lead_suspect=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=&columns=name&columns=Salesperson%3A%3Dsale.seller.name&columns=NSW+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DNSW%29&columns=VIC+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DVIC%29")

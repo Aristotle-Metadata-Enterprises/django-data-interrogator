@@ -1,9 +1,9 @@
 {% load data_interrogator_tags %}
 
 <pre>
-{% for col in col_head %}| {% for cat,text in col.items %}{{ text }} | {% endfor %}{% endfor %}
+| Header |{% for col in col_head %}| {% for cat,text in col.items %}{{ text }} {% endfor %}{% endfor %}
 ====================================================
 {% for row,vals in rows.items %}
-| {{row}} || {% for col,val in vals.items %} {{val.count}}, {% for k,v in val.aggs %} {{k}}:{{v}} | {% endfor %}{% endfor %}
+| {{row}} |{% for col,val in vals.items %}| {{val.count}}, {% for k,v in val.aggs %} {{k}}:{{v}} {% endfor %}{% endfor %}
 {% endfor %}
 </pre>

@@ -221,17 +221,13 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
         a = lead_suspect.objects.values(columns[0]).order_by().distinct()
 
         b = lead_suspect.objects.values(columns[1]).order_by().distinct()
-        if a.count() < b.count():
-            x,y = columns
-            col_head,row_head = a,b
-        else:
-            x,y = columns[::-1]
-            col_head,row_head = b,a
+
+        x,y = columns
+        col_head,row_head = a,b
 
         rows = rows.values(*columns
         ).order_by().distinct().annotate(cell=Count(1)
             , **annotations
-            #, avg__age=ExpressionWrapper(Avg(ExpressionWrapper(ForceDate('death_date')-ForceDate('birth_date'), output_field=DurationField())), output_field=DurationField())
         )
 
         rows[0] #force a database hit to check the state of things
@@ -252,7 +248,6 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
         rows = []
         errors.append("No rows returned for your query, try broadening your search.")
     except exceptions.FieldError,e:
-        #raise
         rows = []
         if str(e).startswith('Cannot resolve keyword'):
             field = str(e).split("'")[1]
@@ -261,7 +256,6 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
             errors.append("An error was found with your query:\n%s"%e)
     except Exception,e:
         rows = []
-        #raise
         errors.append("Something when wrong - %s"%e)
 
     return {'rows':out_rows,'col_head':col_head,'count':count,'columns':output_columns,'errors':errors, 'suspect':suspect_data,'headers':headers }
