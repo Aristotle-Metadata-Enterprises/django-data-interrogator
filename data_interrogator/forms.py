@@ -5,8 +5,8 @@ from django.template.loader import get_template
 from django.template import Context
 from django.utils.translation import ugettext_lazy as _
 
-import models
-from fields import MultipleCharField, AdminMultipleCharInput
+from data_interrogator import models
+from data_interrogator.fields import MultipleCharField, AdminMultipleCharInput
 
 
 class InterrogatorForm(forms.Form):

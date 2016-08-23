@@ -19,7 +19,7 @@ from data_interrogator import db, forms
 dossier = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {})
 witness_protection = dossier.get('witness_protection',["User","Revision","Version"])
 
-from views import normalise_field, get_suspect, clean_filter
+from .utils import normalise_field, get_suspect, clean_filter
 
 class PivotTable(View):
     form_class = forms.PivotTableForm
@@ -126,7 +126,6 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
     filters_all = {}
     expression_columns = []
     for i,expression in enumerate(filters + [v['filter'] for k,v in aliases.items() if k in columns]):
-        print "-----%s-----"%expression
         key,exp,val = clean_filter(normalise_field(expression))
         key = key.strip()
         val = val.strip()
@@ -241,20 +240,20 @@ def pivot(suspect,columns=[],filters=[],aggregators=[],headers=[],limit=None):
                             }
             out_rows[r[y]] = this_row
 
-    except ValueError,e:
+    except ValueError as e:
         rows = []
         errors.append("Limit must be a number greater than zero")
-    except IndexError,e:
+    except IndexError as e:
         rows = []
         errors.append("No rows returned for your query, try broadening your search.")
-    except exceptions.FieldError,e:
+    except exceptions.FieldError as e:
         rows = []
         if str(e).startswith('Cannot resolve keyword'):
             field = str(e).split("'")[1]
             errors.append("The requested field '%s' was not found in the database."%field)
         else:
             errors.append("An error was found with your query:\n%s"%e)
-    except Exception,e:
+    except Exception as e:
         rows = []
         errors.append("Something when wrong - %s"%e)
 

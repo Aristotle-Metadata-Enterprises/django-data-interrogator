@@ -20,6 +20,8 @@ from datetime import timedelta
 from data_interrogator.forms import AdminInvestigationForm, InvestigationForm
 from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
 
+from .utils import normalise_field, get_suspect, clean_filter
+
 # Because of the risk of data leakage from User, Revision and Version tables,
 # If a django user hasn't explicitly set up a witness protecion program,
 # we will ban interrogators from inspecting the User table
@@ -29,25 +31,6 @@ witness_protection = dossier.get('witness_protection',["User","Revision","Versio
 
 def custom_table(request):
     return interrogation_room(request, 'data_interrogator/custom.html')
-
-
-def get_suspect(app_label,model):
-    from django.contrib.contenttypes.models import ContentType
-    
-    return ContentType.objects.get(app_label=app_label.lower(),model=model.lower()).model_class()
-    
-
-def column_generator(request):
-    model = request.GET.get('model','')
-    
-    if model:
-        app_label,model = model.split(':',1)
-        lead_suspect = get_suspect(app_label,model)
-        
-        fields = [str(f.name) for f in lead_suspect._meta.fields]
-        related_models = [f for f in lead_suspect._meta.get_all_field_names() if f not in fields]
-        
-    return JsonResponse({'model': model,'fields':fields,'related_models':related_models})
 
 def interrogation_room(request,template='data_interrogator/custom.html'):
     return InterrogationRoom.as_view(template_name=template)(request)
@@ -305,23 +288,23 @@ class Interrogator():
     
             count = rows.count()
             rows[0] #force a database hit to check the state of things
-        except ValueError,e:
+        except ValueError as e:
             rows = []
             if limit < 1:
                 errors.append("Limit must be a number greater than zero")
             else:
                 errors.append("Something when wrong - %s"%e)
-        except IndexError,e:
+        except IndexError as e:
             rows = []
             errors.append("No rows returned for your query, try broadening your search.")
-        except exceptions.FieldError,e:
+        except exceptions.FieldError as e:
             rows = []
             if str(e).startswith('Cannot resolve keyword'):
                 field = str(e).split("'")[1]
                 errors.append("The requested field '%s' was not found in the database."%field)
             else:
                 errors.append("An error was found with your query:\n%s"%e)
-        except Exception,e:
+        except Exception as e:
             rows = []
             errors.append("Something when wrong - %s"%e)
     
@@ -330,19 +313,6 @@ class Interrogator():
 
 def interrogate(suspect,columns=[],filters=[],order_by=[],headers=[],limit=None):
     return Interrogator(suspect,columns=columns,filters=filters,order_by=order_by,limit=limit).interrogate()
-
-def normalise_field(text):
-    return text.strip().replace('(','::').replace(')','').replace(".","__")
-
-def clean_filter(text):
-    maps = [('<=','lte'),('<','lt'),('>=','gte'),('>','gt'),('<>','ne'),('=','')]
-    for a,b in maps:
-        candidate = text.split(a)
-        if len(candidate) == 2:
-            if a is "=":
-                return candidate[0], b, candidate[1]
-            return candidate[0], '__%s'%b, candidate[1]
-    return text
 
     
 class InterrogationRoom(View):
