@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.forms.models import BaseInlineFormSet
 from django.utils.translation import ugettext_lazy as _
-import models, forms
+from . import models, forms
 from django.conf import settings
 
 class TabularInlineWithRequestInFormset(admin.TabularInline):
