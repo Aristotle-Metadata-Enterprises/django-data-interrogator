@@ -15,6 +15,7 @@ class TestInterrogators(TestCase):
     def test_page_pivot(self):
         response = self.client.get("/data/pivot/?lead_suspect=shop%3AProduct&filter_by=&filter_by=&column_1=sale.state&column_2=name&aggregators=profit%3Dsum%28sale.sale_price+-+cost_price%29")
         self.assertEqual(response.status_code, 200)
+        print response.content
         self.assertTrue('| Beanie ||  119,  profit:1314 |  17,  profit:190 |  41,  profit:367 |  31,  profit:371 |  98,  profit:1050 |  11,  profit:122 |' in response.content)
 
     def test_page_sumif(self):
@@ -65,7 +66,6 @@ class TestInterrogators(TestCase):
             filters=[]
         ).interrogate()
         
-        print inter['headers']
         self.assertTrue('total profit' in inter['columns'])
         self.assertFalse(any(['sum(sale.sale_price' in header for header in inter['columns']]))
         
