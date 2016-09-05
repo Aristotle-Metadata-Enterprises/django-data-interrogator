@@ -67,13 +67,17 @@ class FieldLookupTypeahead(View):
                     help_text = ' '.join([c for c in help_text.split(' ') if c])
             else:
                 help_text = str(f.help_text)
+            if hasattr(f,'get_internal_type'):
+                datatype = f.get_internal_type()
+            else:
+                datatype = "Many to many relationship"
             data = {
                 'value': prefix+field_name,
                 'lookup': args[-1],
                 'name': field_name,
                 'is_relation': is_relation,
                 'help': help_text,
-                'datatype': str(f.get_internal_type()),
+                'datatype': str(datatype),
             }
             out.append(data)
 
