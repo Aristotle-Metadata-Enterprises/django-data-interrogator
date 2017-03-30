@@ -94,7 +94,7 @@ class Interrogator():
             expr = ExpressionWrapper(F(a)-F(b), output_field=CharField())
         return expr
 
-    def get_field_by_name(model,field_name):
+    def get_field_by_name(self, model,field_name):
         from django import VERSION
         if VERSION < (1,10):
             return model._meta.get_field_by_name(field_name)[0]
