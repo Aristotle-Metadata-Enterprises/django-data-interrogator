@@ -94,6 +94,13 @@ class Interrogator():
             expr = ExpressionWrapper(F(a)-F(b), output_field=CharField())
         return expr
 
+    def get_field_by_name(model,field_name):
+        from django import VERSION
+        if VERSION < (1,10):
+            return model._meta.get_field_by_name(field_name)[0]
+        else:
+            return model._meta.get_field(field_name)
+
     def has_forbidden_join(self, column):
         checking_model = self.suspect
         forbidden = False
@@ -101,7 +108,7 @@ class Interrogator():
         for i, relation in enumerate(joins):
             if checking_model:
                 try:
-                    attr = checking_model._meta.get_field_by_name(relation)[0]
+                    attr = self.get_field_by_name(checking_model, relation)
                     if attr.related_model:
                         if attr.related_model._meta.model_name.lower() in [w.lower() for w in witness_protection]:
                             # Despite the join/field being named differently, this column is forbidden!
