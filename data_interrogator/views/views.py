@@ -94,6 +94,23 @@ class Interrogator():
             expr = ExpressionWrapper(F(a)-F(b), output_field=CharField())
         return expr
 
+    def has_forbidden_join(self, column):
+        checking_model = self.suspect
+        forbidden = False
+        joins = column.split('__')
+        for i, relation in enumerate(joins):
+            if checking_model:
+                try:
+                    attr = checking_model._meta.get_field_by_name(relation)[0]
+                    if attr.related_model:
+                        if attr.related_model._meta.model_name.lower() in [w.lower() for w in witness_protection]:
+                            # Despite the join/field being named differently, this column is forbidden!
+                            return True
+                    checking_model = attr.related_model
+                except exceptions.FieldDoesNotExist:
+                    pass
+        return forbidden
+
     def interrogate(self, **kwargs):
         columns = kwargs.get('columns', self.columns)
         filters = kwargs.get('filters', self.filters)
@@ -121,8 +138,7 @@ class Interrogator():
         for column in columns:
             if column == "":
                 continue # do nothings for empty fields
-            if any("__%s__"%witness.lower() in column for witness in witness_protection):
-                continue # do nothing for protected models
+                
             var_name = None
             if ':=' in column: #assigning a variable
                 var_name,column = column.split(':=',1)
@@ -130,7 +146,21 @@ class Interrogator():
                 var_name = column
                 column = aliases[column]['column']
             # map names in UI to django functions
-            column = normalise_field(column).lower()
+            column = normalise_field(column) #.lower()
+            
+            if any("__%s__"%witness.lower() in column for witness in witness_protection):
+                continue # do nothing for protected models
+
+            if self.has_forbidden_join(column):
+                errors.append("Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(column))
+                continue
+
+            if '::' in column:
+                check_col = column.split('::',1)[-1]
+                if self.has_forbidden_join(check_col):
+                    errors.append("Aggregating tables using the column [{}] is forbidden, this column is removed from the output.".format(column))
+                    continue
+
             if var_name is None:
                 var_name = column
             if column.startswith(tuple([a+'::' for a in self.available_annotations.keys()])) and  " - " in column:
@@ -193,7 +223,10 @@ class Interrogator():
         for i,expression in enumerate(filters + [v['filter'] for k,v in aliases.items() if k in columns]):
             #cleaned = clean_filter(normalise_field(expression))
             field,exp,val = clean_filter(normalise_field(expression))
-            #key,val = cleaned.split("=",1)
+            if self.has_forbidden_join(field):
+                errors.append("Filtering with the column [{}] is forbidden, this filter is removed from the output.".format(field))
+                continue
+
             key = '%s%s'%(field.strip(),exp)
             val = val.strip()
             
@@ -284,6 +317,7 @@ class Interrogator():
             if limit:
                 lim = abs(int(limit))
                 rows = rows[:lim]
+
             rows = rows.values(*query_columns)
     
             count = rows.count()
@@ -320,6 +354,9 @@ class InterrogationRoom(View):
     template_name = 'data_interrogator/interrogation_room.html'
     interrogator = Interrogator
 
+    def interrogate(self, *args, **kwargs):
+        return self.interrogator(*args, **kwargs).interrogate()
+
     def get(self, request):
         data = {}
         form = self.form_class()
@@ -344,7 +381,7 @@ class InterrogationRoom(View):
                     vals['base_model'] = suspect
                     return redirect('%s?%s'%(base,vals.urlencode()))
                 else:
-                    data = self.interrogator(suspect,columns=columns,filters=filters,order_by=order_by).interrogate()
+                    data = self.interrogate(suspect,columns=columns,filters=filters,order_by=order_by)
                     # suspects = self.get_model(suspect)
                     # data = interrogate(suspects,columns=columns,filters=filters,order_by=order_by)
         data['form']=form
