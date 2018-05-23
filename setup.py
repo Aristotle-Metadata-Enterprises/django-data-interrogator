@@ -12,9 +12,9 @@ setup(
     name='django-data-interrogator',
     version=__version__,
     packages=find_packages(),
-#     include_package_data=True,
+    include_package_data=True,
     package_data={
-        '': ['*.html', '*.js', '*.css'],
+        'data_interrogator': ['*.html', '*.js', '*.css'],
     },
     license='MIT License',
     description='A suite of interactive table builder utilities that create reports using efficient SQL queries.',
