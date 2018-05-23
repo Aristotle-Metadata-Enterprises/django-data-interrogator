@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 from data_interrogator import __version__
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
@@ -11,8 +11,11 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name='django-data-interrogator',
     version=__version__,
-    packages=['data_interrogator'],
-    include_package_data=True,
+    packages=find_packages(),
+#     include_package_data=True,
+    package_data={
+        '': ['*.html', '*.js', '*.css'],
+    },
     license='MIT License',
     description='A suite of interactive table builder utilities that create reports using efficient SQL queries.',
     long_description=README,
