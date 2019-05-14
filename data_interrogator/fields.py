@@ -39,6 +39,9 @@ class MultipleCharInput(MultiWidget):
         widgets = [TextInput(attrs=attrs) for i in range(number)]
         return widgets
 
+    def format_output(self, rendered_widgets):
+        return ''.join(rendered_widgets)
+
     def decompress(self, value):
         if value:
             values = value.split(DELIMITER)
