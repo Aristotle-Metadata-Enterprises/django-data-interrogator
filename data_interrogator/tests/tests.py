@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.test.utils import setup_test_environment
 from django.utils.encoding import smart_text
     
-setup_test_environment()
+# setup_test_environment()
 
 class TestInterrogators(TestCase):
     fixtures = ['data.json',]
