@@ -36,7 +36,7 @@ class Branch(models.Model):
 
 class SalesPerson(models.Model):
     name = models.CharField(max_length=50)
-    branch = models.ForeignKey(Branch)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     age = models.IntegerField()
 
 
@@ -52,8 +52,8 @@ class Sale(models.Model):
         (TAS, TAS), (SA, SA), (WA, WA)
     )
 
-    product = models.ForeignKey(Product)
-    seller = models.ForeignKey(SalesPerson)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    seller = models.ForeignKey(SalesPerson, on_delete=models.CASCADE)
     sale_date = models.DateTimeField()
     sale_price = models.DecimalField(max_digits=7, decimal_places=2)
     state = models.CharField(max_length=3, choices=states)

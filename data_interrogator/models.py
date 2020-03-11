@@ -1,18 +1,17 @@
 from django.db import models
 from django.conf import settings
-#from django.contrib.flatpages.models import FlatPage
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
 
-suspects = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('suspects',[])
+base_models = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('base_models',[])
 
 class DataTable(models.Model):
     class Meta:
         app_label = 'data_interrogator'
     SUSPECTS = Choices(*[
-        ("%s:%s"%tuple(suspect['model']),suspect['model'][1]) for suspect in suspects
+        ("%s:%s"%tuple(base_model['model']),base_model['model'][1]) for base_model in base_models
         ])
 
     title = models.CharField(_('title'), max_length=200)
@@ -25,7 +24,7 @@ class DataTablePageColumn(models.Model):
     class Meta:
         ordering = ['position']
         app_label = 'data_interrogator'
-    table = models.ForeignKey(DataTable,related_name="columns")
+    table = models.ForeignKey(DataTable,related_name="columns", on_delete=models.CASCADE)
     header_text = models.CharField(max_length=255,null=True,blank=True,
         help_text="The text displayed in the table header for this column")
     column_definition = models.TextField(
@@ -37,7 +36,7 @@ class DataTablePageColumn(models.Model):
 class DataTablePageFilter(models.Model):
     class Meta:
         app_label = 'data_interrogator'
-    table = models.ForeignKey(DataTable,related_name="filters")
+    table = models.ForeignKey(DataTable,related_name="filters", on_delete=models.CASCADE)
     filter_definition = models.TextField(
         help_text="The definition used to extract data from the database")
     def __repr__(self):
@@ -46,7 +45,7 @@ class DataTablePageFilter(models.Model):
 class DataTablePageOrder(models.Model):
     class Meta:
         app_label = 'data_interrogator'
-    table = models.ForeignKey(DataTable,related_name="order")
+    table = models.ForeignKey(DataTable,related_name="order", on_delete=models.CASCADE)
     ordering = models.TextField()
     def __repr__(self):
         return self.ordering

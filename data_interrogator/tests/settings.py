@@ -38,8 +38,19 @@ INSTALLED_APPS = (
 
 ROOT_URLCONF = 'data_interrogator.tests.urls'
 
-WSGI_APPLICATION = 'data_interrogator.wsgi.application'
+# WSGI_APPLICATION = 'data_interrogator.wsgi.application'
 
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+]
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
@@ -79,7 +90,7 @@ TEMPLATES = [
 USE_TZ = True
 
 DATA_INTERROGATION_DOSSIER = {
-    'suspects': [
+    'base_models': [
         {   "model":("shop","Sale"),
             "wrap_sheets": {            },
             "aliases": { },
@@ -88,6 +99,5 @@ DATA_INTERROGATION_DOSSIER = {
         {'model':("shop","Branch")},
         {'model':("shop","SalesPerson")},
     ],
-    'witness_protection' : ["User","Revision","Version"],
-    'suspect_grouping':True
+    'excluded_models' : ["User","Revision","Version"],
 }

@@ -9,13 +9,13 @@ class TestInterrogators(TestCase):
     fixtures = ['data.json',]
     
     def test_page_room(self):
-        response = self.client.get("/data/room/?lead_suspect=shop%3ASalesPerson&filter_by=&filter_by=&columns=name&columns=sum%28sale.sale_price+-+sale.product.cost_price%29&columns=count%28sale%29&sort_by=")
+        response = self.client.get("/data/room/?lead_base_model=shop%3ASalesPerson&filter_by=&filter_by=&columns=name&columns=sum%28sale.sale_price+-+sale.product.cost_price%29&columns=count%28sale%29&sort_by=")
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
         self.assertTrue('| Jody Wiffle | 1289.0 | 136 |' in page)
 
     def test_page_pivot(self):
-        response = self.client.get("/data/pivot/?lead_suspect=shop%3AProduct&filter_by=&filter_by=&column_1=sale.state&column_2=name&aggregators=profit%3Dsum%28sale.sale_price+-+cost_price%29")
+        response = self.client.get("/data/pivot/?lead_base_model=shop%3AProduct&filter_by=&filter_by=&column_1=sale.state&column_2=name&aggregators=profit%3Dsum%28sale.sale_price+-+cost_price%29")
         self.assertEqual(response.status_code, 200)
         page = smart_text(response.content)
 
@@ -38,18 +38,18 @@ class TestInterrogators(TestCase):
             self.assertTrue(expected[state] == val)
 
     def test_page_sumif(self):
-        response = self.client.get("/data/room/?lead_suspect=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=&columns=name&columns=Salesperson%3A%3Dsale.seller.name&columns=NSW+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DNSW%29&columns=VIC+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DVIC%29")
+        response = self.client.get("/data/room/?lead_base_model=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=&columns=name&columns=Salesperson%3A%3Dsale.seller.name&columns=NSW+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DNSW%29&columns=VIC+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DVIC%29")
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
         self.assertTrue('| name | Salesperson | NSW sales | VIC sales |' in page)
         self.assertTrue('| Winter Coat | Morty Smith | 1605.00 | 1782.00 |' in page)
 
-        response = self.client.get("/data/room/?lead_suspect=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DVIC&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
+        response = self.client.get("/data/room/?lead_base_model=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DVIC&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
         self.assertTrue('| Winter Coat | Morty Smith | 1782.00 |' in page)
 
-        response = self.client.get("/data/room/?lead_suspect=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DNSW&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
+        response = self.client.get("/data/room/?lead_base_model=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DNSW&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
         self.assertTrue('| Winter Coat | Morty Smith | 1605.00 |' in page)

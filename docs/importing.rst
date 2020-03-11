@@ -1,7 +1,7 @@
 Importing additional data
 =========================
 
-*The Data Interrogator helps you a dragnet for bulk processing suspects.*
+*The Data Interrogator helps you a dragnet for bulk processing base_models.*
 
 Rough translation: The Data Interrogator is only as good as the data you provide,
 and in a lot of cases data is trapped in CSVs or Excel spreadsheets.

@@ -12,6 +12,6 @@
 {% endif %}
 ---------------------------------------------
 {% for row in rows %}
-| {% for col in columns %}{% wrap_sheet row col %} | {% endfor %}
+| {% for col in columns %}{% custom_cell_display row col %} | {% endfor %}
 {% endfor %}
 </pre>

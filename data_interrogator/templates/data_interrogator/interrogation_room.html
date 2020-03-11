@@ -4,6 +4,8 @@
 {{ count }} rows returned
 {% endif %}
 
+<style>.table, .table * {border:1px solid black}</style>
+
 <table class="table interrogation_room">
     <thead>
         <tr>
@@ -22,7 +24,7 @@
         {% for row in rows %}
         <tr>
             {% for col in columns %}
-                <td>{% wrap_sheet row col %}</td>
+                <td>{% custom_cell_display row col %}</td>
             {% endfor %}
         </tr>
         {% endfor %}
