@@ -19,7 +19,7 @@ def lineup(context,base_models=None):
 
 @register.simple_tag(takes_context=True)
 def interrogation_room(context):
-    return get_template("data_interrogator/interrogation_room.html").render(context)
+    return get_template("data_interrogator/table_display.html").render(context)
 
 @register.simple_tag
 def clean_column_name(column_name):
@@ -71,4 +71,4 @@ def static_interrogation_room(table):
     base_model = table.base_model
     data = interrogate(base_model,columns=columns,headers=headers,filters=filters,order_by=orderby,limit=table.limit)
     data.pop('count')
-    return get_template("data_interrogator/interrogation_room.html").render(Context(data))
+    return get_template("data_interrogator/table_display.html").render(Context(data))

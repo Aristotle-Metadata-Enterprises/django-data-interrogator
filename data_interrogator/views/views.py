@@ -25,21 +25,21 @@ import string
 # excluded_models = dossier.get('excluded_models',["User","Revision","Version"])
 
 
-def interrogation_room(request,template='data_interrogator/custom.html'):
-    return InterrogationView.as_view(template_name=template)(request)
+# # def interrogattion_room(request,template='data_interrogator/custom.html'):
+# #     return InterrogationView.as_view(template_name=template)(request)
 
 
-def interrogate(base_model,columns=[],filters=[],order_by=[],headers=[],limit=None):
-    return Interrogator(
-    ).interrogate(
-        base_model, columns=columns,filters=filters,order_by=order_by,limit=limit
-    )
+# def interrogate(base_model,columns=[],filters=[],order_by=[],headers=[],limit=None):
+#     return Interrogator(
+#     ).interrogate(
+#         base_model, columns=columns,filters=filters,order_by=order_by,limit=limit
+#     )
 
 
 
 class InterrogationMixin:
     form_class = InvestigationForm
-    template_name = 'data_interrogator/interrogation_room.html'
+    template_name = 'data_interrogator/table_builder.html'
     interrogator_class = Interrogator
 
     report_models = []

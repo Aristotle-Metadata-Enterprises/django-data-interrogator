@@ -9,6 +9,6 @@ urlpatterns = [
     path(r'data_interrogator/pivot/', views.AdminInterrogationRoom.as_view(), name='admin_analytics_pivot'),
     path(r'data_interrogator/analytics', include(views.AdminInterrogationAutocompleteUrls(
         # template_name="admin/analytics/analytics.html",
-        url_name="admin_analytics"
+        path_name="admin_analytics"
     ).urls)),
 ]

@@ -1,12 +1,7 @@
 {% extends "admin/base_site.html" %}
-{% load data_interrogator_tags i18n %}
+{% load data_interrogator_tags i18n static %}
 
 {% block title %}Data Interrogator > Admin table builder{% endblock %}
-
-{% block extrahead %}
-<!-- for fancy tables -->
-    {{ form.media }}
-{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
@@ -15,6 +10,17 @@
 <a href="">{% trans 'Data Interrogator' %}</a>
 &rsaquo; Table Builder
 </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ form.media }}
+        <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/0.11.1/typeahead.bundle.js"></script>
+        <script src="{% static 'data_interrogator/multicharfield.js' %}"></script>
+        <script src="{% static 'data_interrogator/multichar.public.js' %}"></script>
+
+       <link href="{% static 'data_interrogator/multicharfield.css' %}" rel="stylesheet">
+       <link href="{% static 'data_interrogator/multicharfield.admin.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
