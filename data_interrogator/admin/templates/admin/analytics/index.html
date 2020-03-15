@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load data_interrogator_tags i18n %}
+
+{% block title %}Data Interrogator > Admin table builder{% endblock %}
+
+{% block extrahead %}
+<!-- for fancy tables -->
+    {{ form.media }}
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo;
+<a href="{% url 'admin:index' %}">{% trans 'Data Interrogator' %}</a>
+&rsaquo; Table Builder
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+    {% include "data_interrogator/admin/lineup.html" %}
+    {% include "data_interrogator/admin/table_display.html" %}
+</div>
+{% endblock %}

@@ -1,18 +1,13 @@
 from django import http
-from django.template import Template
-from django.template.loader import get_template
-from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
 from django.views.generic import View
 import json
 import string
-from .utils import get_suspect
+from .utils import get_base_model
 
 class FieldLookupTypeahead(View):
-
     def get(self, request):
         from django.conf import settings
-        witness_protection = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('witness_protection',["User","Revision","Version"])
+        excluded_models = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {}).get('excluded_models',["User","Revision","Version"])
         model_name = self.request.GET.get('model', None)
         q = self.request.GET.get('q', None)
 
@@ -21,12 +16,12 @@ class FieldLookupTypeahead(View):
                 json.dumps([]),
                 content_type='application/json',
             )
-        if any("__%s"%witness.lower() in q for witness in witness_protection) or any(".%s"%witness.lower() in q for witness in witness_protection):
+        if any("__%s"%witness.lower() in q for witness in excluded_models) or any(".%s"%witness.lower() in q for witness in excluded_models):
             return http.HttpResponse(
                 json.dumps([]),
                 content_type='application/json',
             )
-        model = get_suspect(*(model_name.lower().split(':')))
+        model = get_base_model(*(model_name.lower().split(':')))
 
         # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
         prefix = ""
@@ -45,13 +40,13 @@ class FieldLookupTypeahead(View):
         args = q.split('.')
         if len(args) > 1:
             for a in args[:-1]:
-                model = [f for f in model._meta.get_fields() if f.name==a][0].related_model
+                model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
 
         fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
 
         out = []
         for f in fields:
-            if any(witness.lower() == f.name for witness in witness_protection):
+            if any(witness.lower() == f.name for witness in excluded_models):
                 continue
             field_name = '.'.join(args[:-1]+[f.name])
             is_relation = False
@@ -63,7 +58,7 @@ class FieldLookupTypeahead(View):
                 else:
                     help_text = help_text.lstrip('\n').split('\n')[0]
                     remove = string.whitespace.replace(' ','')
-                    help_text = str(help_text).translate(None,remove)
+                    help_text = str(help_text).translate(remove)
                     help_text = ' '.join([c for c in help_text.split(' ') if c])
             else:
                 help_text = str(f.help_text)

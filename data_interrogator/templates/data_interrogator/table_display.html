@@ -1,0 +1,32 @@
+{% load data_interrogator_tags %}
+
+{% if count %}
+{{ count }} rows returned
+{% endif %}
+
+<style>.table, .table * {border:1px solid black}</style>
+
+<table class="table interrogation_room">
+    <thead>
+        <tr>
+            {% if headers %}
+                {% for col,text in headers %}
+                    <th>{{ text }}</th>
+                {% endfor %}
+            {% else %}
+                {% for col in columns %}
+                    <th>{% clean_column_name col %}</th>
+                {% endfor %}
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for col in columns %}
+                <td>{% custom_cell_display row col %}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

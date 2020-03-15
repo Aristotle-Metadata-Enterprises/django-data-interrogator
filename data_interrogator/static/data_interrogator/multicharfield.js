@@ -1,33 +1,61 @@
-function addField(area) {
-    var holding_cell = area.getElementsByClassName('multicharfields')[0]
-    if (holding_cell.count == undefined) {
-        holding_cell.count = holding_cell.childNodes.length + 10
-    } else {
-        holding_cell.count = holding_cell.count + 1
+var typeahead_settings = {};
+
+function new_field(value="") {
+    return `
+    <div>
+    <input type="text" class="typeahead_field" value="${value}" />
+    <input type='button' value='-' title='Remove' onclick='removeField($(this))' />
+    </div>
+    `;
+}
+
+function new_section(name, add_text) {
+    x = `<div id='id_${name}' data-name="${name}">
+    <div class="fields"></div>
+    <input type='button' value='${add_text}' onclick='addField($(this.parentElement))' />
+    <input type="hidden" value="" name="${name}" id="id_hidden_${name}" />
+    </div>`;
+    return x;
+}
+
+function multichar_init() {
+    typeahead_init();
+    for (section of ['filter_by', 'columns', 'sort_by']) {
+        values = $('#id_'+section).val()
+        $('#id_'+section).replaceWith(new_section(section, 'Add new '+section));
+        for (val of values.split(',')) {
+          addField($('#id_'+section), val)
+        }
     }
 
-    var new_column = area.getElementsByClassName('multicharblank')[0].children[0].cloneNode(true);
-    holding_cell.appendChild(new_column);
-    $(new_column).find('.lineup_text').typeahead(null, typeahead_settings);
+    $('form').submit(function() {
+        for (section of ['filter_by', 'columns', 'sort_by']) {
+            var data=[];
+            $("#id_"+section+" input.typeahead_field.tt-input").each(function() {
+                data.push($(this).val());
+            });
+            console.log(data)
+            $("#id_hidden_"+section).val(data.join());
+        }
+        return true;
+    });
+
+}
+function addField(area, value="") {
+    var holding_cell = area.find('.fields')[0]
+    var new_column = $(new_field(value));
+    new_column.find('input.typeahead_field').typeahead(null, typeahead_settings);
+    new_column.appendTo(holding_cell);
 }
 
 function removeField(field) {
-    findFieldGrouper(field).remove()
-}
-
-function findFieldGrouper (el) {
-    // If the user has altered the structure that holds the field make sure we get the right one
-    // The right one being an element that is a child of the span.multicharfields object.
-    while ((el = el.parentElement) && !el.parentElement.classList.contains('multicharfields'));
-    console.log(el);
-    return el;
+    field.parent().remove()
+    return false;
 }
 
 function get_model () {
-  return document.getElementById("id_lead_suspect").value;
+  return document.getElementById("id_lead_base_model").value;
 }
-
-var typeahead_settings = {};
 
 function typeahead_init() {
   
@@ -36,7 +64,7 @@ function typeahead_init() {
     queryTokenizer: Bloodhound.tokenizers.whitespace,
     
     remote: {
-      url: '/data/ac-field/?q=%QUERY&model=',
+      url: './ac?q=%QUERY&model=',
       replace: function (url, query) {
           return url.replace('%QUERY',query)+encodeURIComponent(get_model())
       },
@@ -69,7 +97,4 @@ function typeahead_init() {
       }
     }
   }
-
-  $('.multicharfields .lineup_text').typeahead(null, typeahead_settings);
-
 }

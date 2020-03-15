@@ -1,0 +1,10 @@
+{% load data_interrogator_tags %}
+
+{% block content %}
+<div class="container">
+<div class="row">
+        {% include "data_interrogator/lineup.html" %}
+        {% include "data_interrogator/table_display.html" %}
+</div>
+</div>
+{% endblock %}

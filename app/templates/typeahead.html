@@ -1,0 +1,41 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+   <head>
+        <title>{% block title %}Test stuff{% endblock %}</title>
+        <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/0.11.1/typeahead.bundle.js"></script>
+        <script src="{% static 'data_interrogator/multicharfield.js' %}"></script>
+        <script src="{% static 'data_interrogator/multichar.public.js' %}"></script>
+
+       <link href="{% static 'data_interrogator/multicharfield.css' %}" rel="stylesheet">
+       <link href="{% static 'data_interrogator/multicharfield.public.css' %}" rel="stylesheet">
+
+        <!-- begin extra_script -->
+        {% block extra_script %}
+        {% endblock %}
+        {{form.media}}
+   </head>
+
+   <body>
+       {% block content %}
+        {% if errors or form.errors %}
+            <strong>There were errors processing your query, please correct the following issues</strong>
+            <ul class="interrogation_errors">
+                {% for error in errors %}
+                    <li>{{ error|linebreaks }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form method="get">
+            <table>
+                {{ form.as_table }}
+            </table>
+            <button name="action" type="submit" value="" onclick="submitForm(this)">Update table</button>
+        </form>
+
+        {% include "data_interrogator/table_display.html" %}
+       {% endblock %}
+   </body>
+</html>

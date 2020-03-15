@@ -1,3 +1,3 @@
 $(document).ready(function(){
-    typeahead_init();
+    multichar_init();
 });

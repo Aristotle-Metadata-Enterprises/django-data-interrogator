@@ -1,0 +1,33 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block bodyclass %}{{ block.super }} dashboard app-{{ app_label }}{% endblock %}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo;
+{% for app in app_list %}
+{{ app.name }}
+{% endfor %}
+</div>
+{% endblock %}
+{% endif %}
+
+{% block sidebar %}
+<div id="content-related">
+    <div class="module" id="recent-actions-module">
+        <h2>{% trans 'Analytics' %}</h2>
+        <h3>Analytics tools - {{app}}</h3>
+        <ul>
+            <li>
+                <a href="{% url 'admin_analytics' %}">{% trans 'Table builder' %}</a>
+            </li>
+            <li>
+                <a href="{% url 'admin_analytics_pivot' %}">{% trans 'Pivot tables' %}</a>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

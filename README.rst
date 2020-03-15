@@ -18,17 +18,17 @@ Add the *Data Interrogator* to your ``INSTALLED_APPS``::
 Quickstart
 ----------
 
-#. Make a list of suspects (models you wish to interrogate) and enter models into *witness protection* (models you want to disallow access to)::
+#. Make a list of base_models (models you wish to interrogate) and enter models into *witness protection* (models you want to disallow access to)::
 
     DATA_INTERROGATION_DOSSIER = {
-        'suspects': [
+        'base_models': [
             {'model':("yourapplabel","YourModelName")},
             {'model':("yourapplabel","YourOtherModelName")},
          ],
-        'witness_protection' : ["User","Revision","Version"]
+        'excluded_models' : ["User","Revision","Version"]
     }
 
-   Notes: ``suspects`` are used to query the django ``ContentType`` database. The values in ``witness_protection`` are matched against columns that might be returned, and any columns that match will be dropped from output.
+   Notes: ``base_models`` are used to query the django ``ContentType`` database. The values in ``excluded_models`` are matched against columns that might be returned, and any columns that match will be dropped from output.
 
 #. Make a view to capture form requests and pass the request off to the *interrogator*::
 
@@ -47,12 +47,12 @@ Quickstart
 Extra dossier configuration
 ---------------------------
 
-The *Interrogation dossier* is a powerful way of altering how data is output. Along with specifying a model that can be a suspect, you can specify ``wrapsheets`` for them - i.e. special ways of displaying columns.
+The *Interrogation dossier* is a powerful way of altering how data is output. Along with specifying a model that can be a base_model, you can specify ``wrapsheets`` for them - i.e. special ways of displaying columns.
 
 Below is an example dossier for a single model, with a wrapsheet for the column ``foo`` on the model ``YourModel``::
 
     DATA_INTERROGATION_DOSSIER = {
-        'suspects': [
+        'base_models': [
           { "model":("yourappname","YourModel"),
             "wrap_sheets": {
                 "foo": {
@@ -63,12 +63,12 @@ Below is an example dossier for a single model, with a wrapsheet for the column 
         ]
      }
 
-The ``columns`` value in the ``wrapsheet`` specified additional columns of data to be retrieved when querying the specified attribute. So in the above example, whenever anyone requests the ``foo`` attribute when interrogating the ``YourModel`` model the ``pk`` and ``bar`` fields will also be retrieved, *but will not be visible in the output table*. However they will be accessible in the ``yourapp/special_columns/for_foo.html`` template which will be used when rendering the ``<td>`` table cell in the table.
+The ``columns`` value in the ``custom_cell_display`` specified additional columns of data to be retrieved when querying the specified attribute. So in the above example, whenever anyone requests the ``foo`` attribute when interrogating the ``YourModel`` model the ``pk`` and ``bar`` fields will also be retrieved, *but will not be visible in the output table*. However they will be accessible in the ``yourapp/special_columns/for_foo.html`` template which will be used when rendering the ``<td>`` table cell in the table.
 
 Bootstrap your way to a nicer interrogation room
 ------------------------------------------------
 
-*Data Interrogator* integrates nicely with `Bootstrap <http://getbootstrap.com>`_ and by default adds a ``table`` class `to use Bootstrap's built in styling for tables <http://getbootstrap.com/css/#tables>`_. If you want to do additional customisation of the "interrogation room" table, just override the ``data_interrogator/interrogation_room.html`` template. For example to convert the interrogation room table into one that is responsive and has table striping, just change the template to that below::
+*Data Interrogator* integrates nicely with `Bootstrap <http://getbootstrap.com>`_ and by default adds a ``table`` class `to use Bootstrap's built in styling for tables <http://getbootstrap.com/css/#tables>`_. If you want to do additional customisation of the "interrogation room" table, just override the ``data_interrogator/table_display.html`` template. For example to convert the interrogation room table into one that is responsive and has table striping, just change the template to that below::
 
     <table class="table table-responsive table-striped">
         <thead>
@@ -97,7 +97,7 @@ Adding Bootstrap-Table for even more powerful investigations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 `Bootstrap-Table <https://github.com/wenzhixin/bootstrap-table>`_ is a powerful front-end table manipulation plug-in for Bootstrap that providings additional filtering, sorting and searching within html tables. `It also has an export extension <http://bootstrap-table.wenzhixin.net.cn/extensions/#table-export>`_ that allows users to download data from the table in a variety of formats including XML, JSON, CSV and Excel spreedsheets. 
 
-Bootstrap-Table and Data Interrogator work well together, and just require loading  the correct javascript libraries for Bootstrap-Table, and altering the ``data_interrogator/interrogation_room.html`` template to add the right data attributes for driving the javascript, for example::
+Bootstrap-Table and Data Interrogator work well together, and just require loading  the correct javascript libraries for Bootstrap-Table, and altering the ``data_interrogator/table_display.html`` template to add the right data attributes for driving the javascript, for example::
 
     <table class="table" data-toggle="table"
            data-toolbar="#toolbar"
@@ -150,8 +150,8 @@ Behind the scenes the data interrogator converts text fields into a format that 
 
 Generating counts, minimums and maximums
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-A small number of `aggregate functions <https://docs.djangoproject.com/en/1.8/ref/models/querysets/#aggregate>`_ are available from the front end - currently ``Count()``, ``Max()`` and ``Min()``. Since these need to be set up in code, these need to be exectued using special syntax - that is just wrapping a column name in the aggreagating command (like demonstrated above), with the argument ``count(arrests)``.
+A small number of `aggregate functions <https://docs.djangoproject.com/en/1.8/ref/models/querysets/#aggregate>`_ are available from the front end - currently ``Count()``, ``Max()`` and ``Min()``. Since these need to be set up in code, these need to be exectued using special syntax - that is just wrapping a column name in the aggregating command (like demonstrated above), with the argument ``count(arrests)``.
 
 Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be nroamlised in django to ``QuerySet.filter(name=F('perp_name'))``.
+Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be noramlised in django to ``QuerySet.filter(name=F('perp_name'))``.
