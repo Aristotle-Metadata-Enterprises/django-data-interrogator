@@ -21,20 +21,6 @@ import string
 # If a django user hasn't explicitly set up excluded models,
 # we will ban interrogators from inspecting the User table
 # as well as Revision and Version (which provide audit tracking and are available in django-revision)
-# dossier = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {})
-# excluded_models = dossier.get('excluded_models',["User","Revision","Version"])
-
-
-# # def interrogattion_room(request,template='data_interrogator/custom.html'):
-# #     return InterrogationView.as_view(template_name=template)(request)
-
-
-# def interrogate(base_model,columns=[],filters=[],order_by=[],headers=[],limit=None):
-#     return Interrogator(
-#     ).interrogate(
-#         base_model, columns=columns,filters=filters,order_by=order_by,limit=limit
-#     )
-
 
 
 class InterrogationMixin:
@@ -137,9 +123,9 @@ class InterrogationAutoComplete(View, InterrogationMixin):
 
         out = []
         for f in fields:
-            if interrogator.is_excluded_field(model, normalise_field(f) ):
+            if interrogator.is_excluded_field(model, normalise_field(f.name) ):
                 continue
-            if interrogator.is_excluded_model(f.related_model):
+            if f.related_model and interrogator.is_excluded_model(f.related_model):
                 continue
             field_name = '.'.join(args[:-1]+[f.name])
             is_relation = False
@@ -207,5 +193,5 @@ class InterrogationAutocompleteUrls():
             path_kwargs.update({'name': self.path_name})
         return [
             path('', view=self.interrogator_view_class.as_view(template_name=self.template_name, **kwargs), **path_kwargs),
-            path('/ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
+            path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
         ]

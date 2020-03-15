@@ -71,7 +71,7 @@ class Interrogator():
     # both of these are lists of either:
     #   ('app_label',)
     #   ('app_label', 'model_name')
-    #   ('app_label', 'model_name', ['list of field names'])
+    #   Not this yet: ('app_label', 'model_name', ['list of field names'])
     allowed = allowable.ALL_MODELS
     excluded = []
 
@@ -141,8 +141,6 @@ class Interrogator():
         Accepts dundered path from model
         """
         # checking_model = base_model or self.base_model
-        # if self.has_forbidden_join(field_path, base_model=None)
-
         return False
 
     def has_forbidden_join(self, column, base_model=None):
@@ -231,7 +229,7 @@ class Interrogator():
         self.base_model = None
         raise Exception("model not allowed")
 
-    def interrogate(self, base_model, columns=[], filters=[], order_by=[], limit=None):
+    def interrogate(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
 
         errors = []
         base_model_data = {}
@@ -333,7 +331,6 @@ class Interrogator():
                         'week':7,
                         'fortnight': 14, # really?
                         'month':30, # close enough
-                        'sam':297,
                         'year': 365,
                         'decade': 10*365, # wise guy huh?
                         }
@@ -388,7 +385,7 @@ class Interrogator():
     
             if limit:
                 lim = abs(int(limit))
-                rows = rows[:lim]
+                rows = rows[offset:lim]
 
             rows = list(rows) # force a database hit to check the state of things
             count = len(rows)
