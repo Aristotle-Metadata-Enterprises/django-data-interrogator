@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin $@

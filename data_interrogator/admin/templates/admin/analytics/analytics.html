@@ -12,7 +12,7 @@
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
 &rsaquo;
-<a href="{% url 'admin:app_list' 'data_interrogator' %}">{% trans 'Data Interrogator' %}</a>
+<a href="">{% trans 'Data Interrogator' %}</a>
 &rsaquo; Table Builder
 </div>
 {% endblock %}
@@ -48,9 +48,9 @@
     </ol>
     </div>
     <div style="">
-        {% include "data_interrogator/admin/lineup.html" %}
+        {% include "admin/analytics/form.html" %}
         <br class="clear">
-        {% include "data_interrogator/admin/interrogation_room.html" %}
+        {% include "admin/analytics/table_display.html" %}
     </div>
 
 </div>

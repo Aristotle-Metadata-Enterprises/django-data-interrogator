@@ -10,7 +10,7 @@ from data_interrogator import db, forms
 from data_interrogator.interrogators import PivotInterrogator
 
 
-class PivotTable(View):
+class PivotTableView(View):
     form_class = forms.PivotTableForm
     template_name = 'data_interrogator/pivot.html'
     
@@ -31,13 +31,3 @@ class PivotTable(View):
             data = PivotInterrogator(base_model=base_model,columns=columns,filters=filters,aggregators=aggregators).pivot()
         data['form']=form
         return render(request, self.template_name, data)
-
-
-class AdminPivotTable(PivotTable):
-    form_class = forms.AdminPivotTableForm
-    template_name = 'data_interrogator/admin/pivot.html'
-
-
-def pivot_table(request,template='data_interrogator/pivot.html'):
-    return PivotTable.as_view(template_name=template)(request)
-

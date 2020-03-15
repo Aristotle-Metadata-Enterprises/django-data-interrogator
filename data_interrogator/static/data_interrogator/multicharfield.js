@@ -97,7 +97,4 @@ function typeahead_init() {
       }
     }
   }
-
-//  $('.multicharfields .typeahead_field').typeahead(null, typeahead_settings);
-
 }

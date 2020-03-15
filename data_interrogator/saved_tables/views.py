@@ -9,20 +9,17 @@ from django.views.generic import View
 
 from django.utils.decorators import method_decorator, classonlymethod
 
+
+# from data_interrogator.forms import AdminInvestigationForm, InvestigationForm
 from data_interrogator.forms import InvestigationForm
-from data_interrogator.interrogators import Interrogator, allowable, normalise_field
-
-
-from django import http
-import json
-import string
+from data_interrogator.interrogators import Interrogator, allowable
 
 # Because of the risk of data leakage from User, Revision and Version tables,
 # If a django user hasn't explicitly set up excluded models,
 # we will ban interrogators from inspecting the User table
 # as well as Revision and Version (which provide audit tracking and are available in django-revision)
-# dossier = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {})
-# excluded_models = dossier.get('excluded_models',["User","Revision","Version"])
+dossier = getattr(settings, 'DATA_INTERROGATION_DOSSIER', {})
+excluded_models = dossier.get('excluded_models',["User","Revision","Version"])
 
 
 def interrogation_room(request,template='data_interrogator/custom.html'):
@@ -83,7 +80,9 @@ class InterrogationView(View, InterrogationMixin):
         data['form'] = form
         return render(request, self.template_name, data)
 
-
+from django import http
+import json
+import string
 class InterrogationAutoComplete(View, InterrogationMixin):
     def get_allowed_fields(self):
         pass
@@ -113,6 +112,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
         #         content_type='application/json',
         #     )
         # model = get_base_model(*(model_name.lower().split(':')))
+        # 1/0
 
         # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
         prefix = ""
@@ -137,9 +137,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
 
         out = []
         for f in fields:
-            if interrogator.is_excluded_field(model, normalise_field(f) ):
-                continue
-            if interrogator.is_excluded_model(f.related_model):
+            if any(witness.lower() == f.name for witness in excluded_models):
                 continue
             field_name = '.'.join(args[:-1]+[f.name])
             is_relation = False
@@ -180,18 +178,14 @@ class InterrogationAutocompleteUrls():
     associated with a new organization.
     """
 
-    interrogator_view_class = InterrogationView
-    interrogator_autocomplete_class = InterrogationAutoComplete
-
-    # report_models = []
-    # allowed = allowable.ALL_APPS
-    # excluded = []
+    report_models = []
+    allowed = allowable.ALL_APPS
+    excluded = []
     def __init__(self, *args, **kwargs):
-        self.report_models = kwargs.get('report_models', self.interrogator_view_class.report_models)
-        self.allowed = kwargs.get('allowed', self.interrogator_view_class.allowed)
-        self.excluded = kwargs.get('excluded', self.interrogator_view_class.excluded)
-        self.template_name = kwargs.get('template_name', self.interrogator_view_class.template_name)
-        self.path_name = kwargs.get('path_name', None)
+        self.report_models = kwargs.get('report_models', self.report_models)
+        self.allowed = kwargs.get('allowed', self.allowed)
+        self.excluded = kwargs.get('excluded', self.excluded)
+        self.template_name = kwargs.get('template_name', InterrogationView.template_name)
 
     @property
     def urls(self):
@@ -201,11 +195,25 @@ class InterrogationAutocompleteUrls():
             'allowed': self.allowed,
             'excluded': self.excluded,
         }
-        print(self.interrogator_view_class)
-        path_kwargs = {}
-        if self.path_name:
-            path_kwargs.update({'name': self.path_name})
         return [
-            path('', view=self.interrogator_view_class.as_view(template_name=self.template_name, **kwargs), **path_kwargs),
-            path('/ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
+            path('', view=InterrogationView.as_view(template_name=self.template_name, **kwargs)),
+            path('/ac', view=InterrogationAutoComplete.as_view(**kwargs)),
         ]
+
+    
+def datatable(request,url):
+    table = get_object_or_404(data_interrogator.models.DataTablePage, url=url)
+
+    filters = [f.filter_definition for f in table.filters.all()]
+    columns = [c.column_definition for c in table.columns.all()]
+    orderby = [f.ordering for f in table.order.all()]
+    base_model = table.base_model
+    
+    template = "data_interrogator/by_the_book.html"
+    if table.template_name:
+        template = table.template_name
+
+    data = Interrogator(base_model,columns=columns,filters=filters,order_by=orderby,limit=table.limit).interrogate()
+    data['table'] = table
+    return render(request, template, data)
+

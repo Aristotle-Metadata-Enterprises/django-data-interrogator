@@ -19,13 +19,13 @@
 <div id="content-related">
     <div class="module" id="recent-actions-module">
         <h2>{% trans 'Analytics' %}</h2>
-        <h3>Analytics tools</h3>
+        <h3>Analytics tools - {{app}}</h3>
         <ul>
             <li>
-                <a href="{% url 'admin:app_list' 'data_interrogator' %}analytics">{% trans 'Table builder' %}</a>
+                <a href="{% url 'admin_analytics' %}">{% trans 'Table builder' %}</a>
             </li>
             <li>
-                <a href="{% url 'admin:app_list' 'data_interrogator' %}pivot">{% trans 'Pivot tables' %}</a>
+                <a href="{% url 'admin_analytics_pivot' %}">{% trans 'Pivot tables' %}</a>
             </li>
         </ul>
     </div>

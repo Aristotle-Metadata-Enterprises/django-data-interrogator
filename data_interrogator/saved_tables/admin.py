@@ -94,12 +94,12 @@ class DataTableAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {'fields': ('title', 'base_model','limit')}),
     )     
-    inlines = [DataColumnInline,DataFilterInline,DataOrderInline]
+    inlines = [DataColumnInline, DataFilterInline, DataOrderInline]
 
     list_display = ('title',)
     list_filter = ('columns',)
     search_fields = ('title',)
 
-admin.site.register(models.DataTablePage,DataTablePageAdmin)
+admin.site.register(models.DataTablePage, DataTablePageAdmin)
 
-admin.site.register(models.DataTable,DataTableAdmin)
+admin.site.register(models.DataTable, DataTableAdmin)

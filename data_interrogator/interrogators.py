@@ -8,8 +8,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from datetime import timedelta
 
-# from data_interrogator.forms import AdminInvestigationForm, InvestigationForm
-from data_interrogator.forms import InvestigationForm
 from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
 
 from django.apps import apps
@@ -135,11 +133,20 @@ class Interrogator():
             )
         return expr
 
-    def get_field_by_name(self, model,field_name):
+    def get_field_by_name(self, model, field_name):
         return model._meta.get_field(field_name)
 
-    def has_forbidden_join(self, column):
-        checking_model = self.base_model
+    def is_excluded_field(sekf, field_path, base_model=None):
+        """
+        Accepts dundered path from model
+        """
+        # checking_model = base_model or self.base_model
+        # if self.has_forbidden_join(field_path, base_model=None)
+
+        return False
+
+    def has_forbidden_join(self, column, base_model=None):
+        checking_model = base_model or self.base_model
         forbidden = False
         joins = column.split('__')
         for i, relation in enumerate(joins):
@@ -148,7 +155,6 @@ class Interrogator():
                     attr = self.get_field_by_name(checking_model, relation)
                     if attr.related_model:
                         if self.is_excluded_model(attr.related_model):
-                            # if attr.related_model._meta.model_name.lower() in [w.lower() for w in self.excluded_models]:
                             # Despite the join/field being named differently, this column is forbidden!
                             return True
                     checking_model = attr.related_model
@@ -213,12 +219,12 @@ class Interrogator():
         app_label,model = base_model.split(':',1)
         base_model = apps.get_model(app_label.lower(), model.lower())
 
+        extra_data = {}
         if self.report_models == allowable.ALL_MODELS:
             return base_model, extra_data
 
         for opts in self.report_models:
             if opts[:2] == (app_label, model):
-                extra_data = {}
                 return base_model, extra_data
 
         # TODO: Make proper exception
@@ -226,11 +232,6 @@ class Interrogator():
         raise Exception("model not allowed")
 
     def interrogate(self, base_model, columns=[], filters=[], order_by=[], limit=None):
-        # columns = kwargs.get('columns', self.columns)
-        # filters = kwargs.get('filters', self.filters)
-        # order_by = kwargs.get('order_by', self.order_by)
-        # headers = kwargs.get('headers', self.headers)
-        # limit = kwargs.get('limit', self.limit)
 
         errors = []
         base_model_data = {}
@@ -253,7 +254,7 @@ class Interrogator():
             if ':=' in column: #assigning a variable
                 var_name,column = column.split(':=',1)
             # map names in UI to django functions
-            column = normalise_field(column) #.lower()
+            column = normalise_field(column)
             
             if self.has_forbidden_join(column):
                 errors.append("Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(column))
@@ -389,8 +390,8 @@ class Interrogator():
                 lim = abs(int(limit))
                 rows = rows[:lim]
 
-            count = rows.count()
-            rows[0] # force a database hit to check the state of things
+            rows = list(rows) # force a database hit to check the state of things
+            count = len(rows)
         except ValueError as e:
             rows = []
             if limit < 1:
@@ -413,8 +414,8 @@ class Interrogator():
             errors.append("Something when wrong - %s"%e)
     
         return {
-            'rows':rows,'count':count,'columns':output_columns,'errors':errors,
-            'base_model':base_model_data, #'headers':headers
+            'rows':rows, 'count':count, 'columns':output_columns, 'errors':errors,
+            'base_model':base_model_data
         }
 
 class PivotInterrogator(Interrogator):
@@ -441,7 +442,6 @@ class PivotInterrogator(Interrogator):
         out_rows = {}
 
         col_head = self.base_model.objects.values(self.columns[0]).order_by(self.columns[0]).distinct()
-        # row_head = self.base_model.objects.values(self.columns[1]).order_by(self.columns[1]).distinct()
 
         x,y = self.columns[:2]
 

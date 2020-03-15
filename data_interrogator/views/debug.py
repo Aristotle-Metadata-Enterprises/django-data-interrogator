@@ -379,15 +379,6 @@ class InterrogationRoom(View):
         lead_base_model = get_base_model(app_label,model)
         return lead_base_model.all()
 
-
-class AdminInterrogationRoom(InterrogationRoom):
-    template_name = 'data_interrogator/admin/analytics.html'
-    form_class = AdminInvestigationForm
-
-    @method_decorator(user_passes_test(lambda u: u.is_staff))
-    def get(self, request):
-        return super(AdminInterrogationRoom,self).get(request)
-
     
 def datatable(request,url):
     table = get_object_or_404(data_interrogator.models.DataTablePage, url=url)

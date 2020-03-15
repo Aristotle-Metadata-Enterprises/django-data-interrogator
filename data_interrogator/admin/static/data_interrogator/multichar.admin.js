@@ -3,6 +3,6 @@ $ = django.jQuery;
 
 (function($){
     $(document).ready(function(){
-        typeahead_init();
+        multichar_init();
     })
 })(django.jQuery);
