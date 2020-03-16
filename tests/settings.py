@@ -26,9 +26,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
+    'tests',
     'shop.apps.ShopConfig',
     'data_interrogator',
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -36,7 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 )
 
-ROOT_URLCONF = 'data_interrogator.tests.urls'
+ROOT_URLCONF = 'tests.urls'
 
 # WSGI_APPLICATION = 'data_interrogator.wsgi.application'
 
@@ -68,12 +68,12 @@ DATABASES = {
 STATIC_URL = '/static/'
 STATIC_ROOT=os.path.join(BASE_DIR, 'static')
 
+USE_TZ = True
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),
-        ],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'debug': DEBUG,
@@ -86,18 +86,3 @@ TEMPLATES = [
         },
     },
 ]
-
-USE_TZ = True
-
-DATA_INTERROGATION_DOSSIER = {
-    'base_models': [
-        {   "model":("shop","Sale"),
-            "wrap_sheets": {            },
-            "aliases": { },
-        },
-        {'model':("shop","Product")},
-        {'model':("shop","Branch")},
-        {'model':("shop","SalesPerson")},
-    ],
-    'excluded_models' : ["User","Revision","Version"],
-}

@@ -5,6 +5,7 @@ from django.db.models.fields.related import RelatedField,ForeignObject,ManyToMan
 from django.db.models.expressions import Func
 from django.db.models import Case, Lookup, Sum, Transform, Q, When
 
+
 # This is different to the built in Django Concat command, as that concats columns in a row
 # This concats one column from a selection of rows together.
 class GroupConcat(Aggregate):
@@ -88,6 +89,8 @@ class NotEqual(Lookup):
         rhs, rhs_params = self.process_rhs(qn, connection)
         params = lhs_params + rhs_params
         return '%s != %s' % (lhs, rhs), params
+
+
 Field.register_lookup(NotEqual)
 RelatedField.register_lookup(NotEqual)
 ForeignObject.register_lookup(NotEqual)

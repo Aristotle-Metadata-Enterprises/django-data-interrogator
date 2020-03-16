@@ -1,0 +1,19 @@
+{% load data_interrogator_tags %}
+
+{{form.errors}}
+{{errors}}
+
+{% if count %}
+{{ count }} rows returned
+{% endif %}
+
+<pre>
+{% if headers %}
+| {% for col,text in headers %}{{ text }} | {% endfor %}
+{% else %}
+| {% for col in columns %}{% clean_column_name col %} | {% endfor %}
+{% endif %}
+---------------------------------------------
+{% for row in rows %}
+| {% for col in columns %}{% custom_cell_display row col %} | {% endfor %}{% endfor %}
+</pre>

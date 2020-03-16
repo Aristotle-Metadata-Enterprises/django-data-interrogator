@@ -187,7 +187,7 @@ class InterrogationAutocompleteUrls():
             'allowed': self.allowed,
             'excluded': self.excluded,
         }
-        print(self.interrogator_view_class)
+
         path_kwargs = {}
         if self.path_name:
             path_kwargs.update({'name': self.path_name})

@@ -15,18 +15,18 @@ urlpatterns = [
     path(r'admin/', include("data_interrogator.admin.urls")),
     path(r'admin/', admin.site.urls),
     path(r'data/', include("data_interrogator.urls")),
-    path(r'product_report', include(views.InterrogationAutocompleteUrls(
+    path(r'product_report/', include(views.InterrogationAutocompleteUrls(
         report_models=[("shop","Product")],
         allowed=[("shop")],
         excluded=[("shop", "SalesPerson")],
         template_name="typeahead.html"
     ).urls)),
-    path(r'shop_report', include(views.InterrogationAutocompleteUrls(
+    path(r'shop_report/', include(views.InterrogationAutocompleteUrls(
         report_models=[("shop",)],
         allowed=[("shop",)],
         template_name="typeahead.html"
     ).urls)),
-    path(r'full_report', include(views.InterrogationAutocompleteUrls(
+    path(r'full_report/', include(views.InterrogationAutocompleteUrls(
         report_models=allowable.ALL_MODELS,
         allowed=allowable.ALL_MODELS,
         template_name="typeahead.html"

@@ -1,9 +1,9 @@
 language: python
 python:
-  - "3.5"
   - "3.6"
+  - "3.7"
 env:
-  - DJANGO=1.11
+  - DJANGO=3.0
 install:
 # command to install dependencies
   - "pip install coveralls"
@@ -11,6 +11,6 @@ install:
   - "pip install ."
 # command to run tests
 script:
-  - coverage run --branch --source=data_interrogator manage.py test
+  - PYTHONPATH=./app coverage run --branch --source=data_interrogator manage.py test
 after_success:
   - coveralls

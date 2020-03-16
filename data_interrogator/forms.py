@@ -28,7 +28,6 @@ class InterrogatorForm(forms.Form):
             ]
 
         for base_model in base_models:
-            print(base_model)
             if len(base_model) == 1:
                 app_name = base_model[0]
                 for model in apps.get_app_config(app_name).models:
