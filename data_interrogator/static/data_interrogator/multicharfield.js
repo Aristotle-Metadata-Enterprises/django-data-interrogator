@@ -23,7 +23,7 @@ function multichar_init() {
     for (section of ['filter_by', 'columns', 'sort_by']) {
         values = $('#id_'+section).val()
         $('#id_'+section).replaceWith(new_section(section, 'Add new '+section));
-        for (val of values.split(',')) {
+        for (val of values.split('||')) {
           addField($('#id_'+section), val)
         }
     }
@@ -35,7 +35,7 @@ function multichar_init() {
                 data.push($(this).val());
             });
             console.log(data)
-            $("#id_hidden_"+section).val(data.join());
+            $("#id_hidden_"+section).val(data.join("||"));
         }
         return true;
     });

@@ -1,93 +1,214 @@
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import TestCase
 from django.test.utils import setup_test_environment
 from django.utils.encoding import smart_text
-    
-# setup_test_environment()
 
-class TestInterrogators(TestCase):
+
+from django.db.models import F, Count, Min, Max, Sum, Value, Avg
+from data_interrogator.interrogators import Interrogator, allowable
+from django.apps import apps
+from django.db.models import Case, Lookup, Sum, Transform, Q, When, F, FloatField, ExpressionWrapper
+from data_interrogator import exceptions
+
+
+class TestInterrogatorPages(TestCase):
     fixtures = ['data.json',]
     
     def test_page_room(self):
-        response = self.client.get("/data/room/?lead_base_model=shop%3ASalesPerson&filter_by=&filter_by=&columns=name&columns=sum%28sale.sale_price+-+sale.product.cost_price%29&columns=count%28sale%29&sort_by=")
+        response = self.client.get(
+            "/data/?lead_base_model=shop%3Asalesperson&"
+            "filter_by=&filter_by=&"
+            "columns="
+            "name||"
+            "sum%28sale.sale_price+-+sale.product.cost_price%29||"
+            "count%28sale%29&sort_by="
+        )
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('| Jody Wiffle | 1289.0 | 136 |' in page)
-
-    def test_page_pivot(self):
-        response = self.client.get("/data/pivot/?lead_base_model=shop%3AProduct&filter_by=&filter_by=&column_1=sale.state&column_2=name&aggregators=profit%3Dsum%28sale.sale_price+-+cost_price%29")
-        self.assertEqual(response.status_code, 200)
-        page = smart_text(response.content)
-
-        self.assertTrue('| Beanie ||' in page)
-        beanie_values = [line for line in page.split('\n') if line.startswith('| Beanie ||')]
-
-        self.assertTrue(len(beanie_values) == 1)
-
-        beanie_values = [v.strip() for v in beanie_values[0].strip().split('|| ',1)[1].split(' | ')]
-
-        header = [line for line in page.split('\n') if line.startswith("| Header |")][0]
-        header = header.strip().split('|| ',1)[1].split(' | ')
-
-        expected_states = "NSW | SA | QLD | TAS | VIC | WA".split(" | ")
-        expected_values = "  119,  profit:1314 |  17,  profit:190 |  41,  profit:367 |  31,  profit:371 |  98,  profit:1050 |  11,  profit:122  "
-        expected_values = [v.strip() for v in expected_values.split("|")]
-        expected = dict(zip(expected_states,expected_values))
-
-        for state,val in zip(header, beanie_values):
-            self.assertTrue(expected[state] == val)
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+        q = SalesPerson.objects.order_by('name').values("name").annotate(
+            total=Sum(
+                ExpressionWrapper(
+                    F('sale__sale_price') - F('sale__product__cost_price'),
+                    output_field=FloatField(),
+                ), 
+                distinct=False),
+            sales=Count('sale'),
+        )
+        for row in q:
+            self.assertTrue('| {name} | {total} | {sales} |'.format(**row) in page)
 
     def test_page_sumif(self):
-        response = self.client.get("/data/room/?lead_base_model=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=&columns=name&columns=Salesperson%3A%3Dsale.seller.name&columns=NSW+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DNSW%29&columns=VIC+sales%3A%3Dsumif%28sale.sale_price%2C+sale.state.iexact%3DVIC%29")
+        response = self.client.get("/data/?lead_base_model=shop%3Aproduct&filter_by=&columns=name||sale.seller.name||sumif(sale.sale_price%2C+sale.state.iexact%3DNSW)||sumif(sale.sale_price%2C+sale.state.iexact%3DVIC)")
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('| name | Salesperson | NSW sales | VIC sales |' in page)
-        self.assertTrue('| Winter Coat | Morty Smith | 1605.00 | 1782.00 |' in page)
 
-        response = self.client.get("/data/room/?lead_base_model=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DVIC&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
-        page = smart_text(response.content)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue('| Winter Coat | Morty Smith | 1782.00 |' in page)
+        Product = apps.get_model('shop', 'Product')
+        q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
+            vic_sales=Sum(
+                Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0)
+            ),
+            nsw_sales=Sum(
+                Case(When(sale__state__iexact='NSW', then=F('sale__sale_price')), default=0)
+            )
+        )
 
-        response = self.client.get("/data/room/?lead_base_model=shop%3AProduct&filter_by=name%3DWinter+Coat&filter_by=sale.state.iexact%3DNSW&filter_by=&columns=name&columns=sale.seller.name&columns=sum%28sale.sale_price%29")
-        page = smart_text(response.content)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue('| Winter Coat | Morty Smith | 1605.00 |' in page)
+        for row in q:
+            self.assertTrue('| {name} | {sale__seller__name} | {nsw_sales} | {vic_sales} |'.format(**row) in page)
+
+    def test_page_pivot(self):
+        # TODO
+        pass
+
+
+class TestInterrogators(TestCase):
+    fixtures = ['data.json',]
+
+    def assertIterablesEqual(self, list_a, list_b):
+        for a, b in zip(list_a, list_b):
+            self.assertEqual(a, b)
+        self.assertEqual(len(list_a), len(list_b))
+
+    def test_sumif(self):
+        Product = apps.get_model('shop', 'Product')
+
+        report = Interrogator(
+            report_models=[('shop','Product'),],
+            allowed=allowable.ALL_MODELS,
+            excluded=[]
+        )
+
+        results = report.interrogate(
+            base_model='shop:Product',
+            columns=['name','vic_sales:=sumif(sale.sale_price, sale.state.iexact=VIC)'],
+            filters=[]
+        )
+
+        q = Product.objects.order_by('name').values("name").annotate(
+            vic_sales=Sum(
+                Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0)
+            )
+        )
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
+
+    def test_cannot_start_from_forbidden_model(self):
+        report = Interrogator(
+            report_models=[('shop','SalesPerson'),],
+            allowed=allowable.ALL_MODELS,
+            excluded=[]
+        )
+        with self.assertRaises(exceptions.ModelNotAllowedException):
+            results = report.interrogate(
+                base_model='shop:Product',
+                columns=['name'],
+                filters=[]
+            )
+
+    def test_cannot_join_forbidden_model(self):
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+        report = Interrogator(
+            report_models=[('shop','Sale'),],
+            allowed=allowable.ALL_MODELS,
+            excluded=[('shop','SalesPerson')]
+        )
+        self.assertTrue(report.is_excluded_model(SalesPerson))
+
+        results = report.interrogate(
+            base_model='shop:Sale',
+            columns=['product__name', 'seller__name'],
+            filters=[]
+        )
+        self.assertEqual(len(results['errors']), 1)
+        self.assertEqual(
+            results['errors'][0],
+            'Joining tables with the column [seller__name] is forbidden, this column is removed from the output.'
+        )
+
+    def test_cannot_join_forbidden_app(self):
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+        report = Interrogator(
+            report_models=[('shop','Sale'),],
+            allowed=allowable.ALL_MODELS,
+            excluded=[('shop')]
+        )
+        self.assertTrue(report.is_excluded_model(SalesPerson))
+
+        results = report.interrogate(
+            base_model='shop:Sale',
+            columns=['seller__name'],
+            filters=[]
+        )
+        self.assertEqual(len(results['errors']), 1)
+        self.assertEqual(
+            results['errors'][0],
+            'Joining tables with the column [seller__name] is forbidden, this column is removed from the output.'
+        )
 
     def test_interrogator(self):
-        from data_interrogator.views import Interrogator
-
-        from django.apps import apps
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
-        inter = Interrogator(
-            'shop:SalesPerson',
-            columns=['name','sum(sale.sale_price - sale.product.cost_price)','count(sale)'],
-            filters=[]
-        ).interrogate()
-        q = SalesPerson.objects.filter(sale__sale_price__gt=0).distinct()
-        self.assertTrue(inter['count'] == q.count())
+        report = Interrogator(
+            report_models=[('shop','SalesPerson'),],
+            allowed=allowable.ALL_MODELS,
+            excluded=[]
+        )
 
-        inter = Interrogator(
+        results = report.interrogate(
+            base_model='shop:SalesPerson',
+            columns=['name','num:=count(sale)'],
+            filters=[]
+        )
+        q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')) #.filter(num__gt=0) #.distinct()
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
+
+    def test_interrogator_with_sum_and_math(self):
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+        unique_names = SalesPerson.objects.values("name").distinct()
+
+        report = Interrogator(
+            report_models=[('shop','SalesPerson'),],
+            allowed=allowable.ALL_MODELS,
+            excluded=[]
+        )
+
+        results = report.interrogate(
             'shop:SalesPerson',
-            columns=['name','sum(sale.sale_price - sale.product.cost_price)','count(sale)'],
+            columns=['name','profit:=sum(sale.sale_price - sale.product.cost_price)','total:=count(sale)'],
+        )
+        q = SalesPerson.objects.order_by('name').values("name").annotate(
+            total=Count('sale'),
+            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'))
+        )
+        for r in results['rows']:
+            print("| {: <16} \t| {} | {} |".format(*r.values()))
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
+        self.assertTrue(results['count'] == unique_names.count())
+
+        results = report.interrogate(
+            'shop:SalesPerson',
+            columns=['name','profit:=sum(sale.sale_price - sale.product.cost_price)','total:=count(sale)'],
             filters=['name = Jody Wiffle']
-        ).interrogate()
-        self.assertTrue(inter['count'] == SalesPerson.objects.filter(name='Jody Wiffle').count())
+        )
+        q = SalesPerson.objects.order_by('name').values("name").annotate(
+            total=Count('sale'),
+            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'))
+        ).filter(name='Jody Wiffle')
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
+        self.assertTrue(results['count'] == unique_names.filter(name='Jody Wiffle').count())
 
-        inter = Interrogator(
+        results = report.interrogate(
             'shop:SalesPerson',
-            columns=['name','sum(sale.sale_price - sale.product.cost_price)','count(sale)'],
+            columns=['name','profit:=sum(sale.sale_price - sale.product.cost_price)','total:=count(sale)'],
             filters=['name.icontains = Wiffle']
-        ).interrogate()
-        self.assertTrue(inter['count'] == SalesPerson.objects.filter(name__icontains='Wiffle').count())
-
-        inter = Interrogator(
-            'shop:SalesPerson',
-            columns=['name','total profit:= sum(sale.sale_price - sale.product.cost_price)','count(sale)'],
-            filters=[]
-        ).interrogate()
-        
-        self.assertTrue('total profit' in inter['columns'])
-        self.assertFalse(any(['sum(sale.sale_price' in header for header in inter['columns']]))
-        
+        )
+        q = SalesPerson.objects.order_by('name').values("name").annotate(
+            total=Count('sale'),
+            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'))
+        ).filter(name__icontains='Wiffle')
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
+        self.assertTrue(results['count'] == unique_names.filter(name__icontains='Wiffle').count())

@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from datetime import timedelta
 
 from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
+from data_interrogator import exceptions as di_exceptions
 
 from django.apps import apps
 
@@ -83,6 +84,18 @@ class Interrogator():
         if excluded is not None:
             self.excluded = excluded
 
+        # Clean up rules if they aren't lower cased.
+        fixed_excluded = []
+        for rule in self.excluded:
+            if len(rule) == 1:
+                rule = (rule[0].lower(),)
+            if len(rule) == 2:
+                rule = (rule[0].lower(), rule[1].lower())
+            if len(rule) == 3:
+                rule = (rule[0].lower(), rule[1].lower(), rule[2])
+            fixed_excluded.append(rule)
+        self.excluded = fixed_excluded
+
         if self.allowed != allowable.ALL_MODELS:
             self.allowed_apps = [
                 i[0] for i in allowed
@@ -113,9 +126,13 @@ class Interrogator():
             model = [f for f in model._meta.get_fields() if f.name==a][0].related_model
 
     def normalise_math(self,expression):
+        if not any(s in expression for s in math_infix_symbols.keys()):
+            # we're aggregating some mathy things, these are tricky
+            return F(normalise_field(expression))
+
         import re
         math_operator_re = '[\-\/\+\*]'
-        print(re.split(math_operator_re, expression, 1))
+
         a, b = [v.strip() for v in re.split(math_operator_re, expression, 1)]
         first_operator = re.findall(math_operator_re, expression)[0]
 
@@ -164,44 +181,34 @@ class Interrogator():
         return {}
 
     def get_annotation(self, column):
-        if any(s in column for s in math_infix_symbols.keys()):
-            # we're aggregating some mathy things, these are tricky
-            split = column.split('::')
-            aggs, field = split[0:-1], split[-1]
-            agg = aggs[0]
-
-            expr = self.normalise_math(field)
-            annotation = self.available_aggregations[agg](expr, distinct=True)
-
-            # query_columns.append(var_name)
-            # expression_columns.append(var_name)
-
-        else:
-            agg, field = column.split('::', 1)
-            if agg == 'sumif':
+        agg, field = column.split('::', 1)
+        if agg == 'sumif':
+            try:
                 field, cond = field.split(',', 1)
-                field = normalise_field(field)
-                conditions = {}
-                for condition in cond.split(','):
-                    condition_key, condition_val = condition.split('=', 1)
-                    conditions[normalise_field(condition_key)] = normalise_field(condition_val)
-                annotation = self.available_aggregations[agg](field=F(field), **conditions)
-            elif agg == 'join':
-                fields = []
-                for f in field.split(','):
-                    if f.startswith(('"', "'")):
-                        # its a string!
-                        fields.append(Value(f.strip('"').strip("'")))
-                    else:
-                        fields.append(f)
-                annotation = self.available_aggregations[agg](*fields)
-            elif agg == "substr":
-                field, i, j = (field.split(',') + [None])[0:3]
-                annotation = self.available_aggregations[agg](field, i, j)
-            else:
-                annotation = self.available_aggregations[agg](field, distinct=True)
+            except:
+                raise di_exceptions.InvalidAnnotationError("SUMIF must have a condition")
+            field = self.normalise_math(field)
+            conditions = {}
+            for condition in cond.split(','):
+                condition_key, condition_val = condition.split('=', 1)
+                conditions[normalise_field(condition_key)] = normalise_field(condition_val)
+            annotation = self.available_aggregations[agg](field=field, **conditions)
+        elif agg == 'join':
+            fields = []
+            for f in field.split(','):
+                if f.startswith(('"', "'")):
+                    # its a string!
+                    fields.append(Value(f.strip('"').strip("'")))
+                else:
+                    fields.append(f)
+            annotation = self.available_aggregations[agg](*fields)
+        elif agg == "substr":
+            field, i, j = (field.split(',') + [None])[0:3]
+            annotation = self.available_aggregations[agg](field, i, j)
+        else:
+            field = self.normalise_math(field)
+            annotation = self.available_aggregations[agg](field, distinct=False)
         return annotation
-
     def is_allowed_model(self, model):
         pass
 
@@ -210,7 +217,6 @@ class Interrogator():
         model_name = model_class._meta.model_name
 
         # if self.allowed = allowable.ALL_MODELS
-
         return app_label in self.excluded or (app_label, model_name) in self.excluded
 
     def validate_report_model(self, base_model):
@@ -225,11 +231,10 @@ class Interrogator():
             if opts[:2] == (app_label, model):
                 return base_model, extra_data
 
-        # TODO: Make proper exception
         self.base_model = None
-        raise Exception("model not allowed")
+        raise di_exceptions.ModelNotAllowedException()
 
-    def interrogate(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
+    def generate_queryset(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
 
         errors = []
         base_model_data = {}
@@ -237,10 +242,9 @@ class Interrogator():
         output_columns = []
         count=0
 
-        self.base_model, base_model_data = self.validate_report_model(base_model)
         annotations = self.get_base_annotations()
         query_columns = []
-
+        self.base_model, base_model_data = self.validate_report_model(base_model)
         wrap_sheets = base_model_data.get('wrap_sheets',{})
 
         expression_columns = []
@@ -249,7 +253,8 @@ class Interrogator():
                 continue # do nothings for empty fields
                 
             var_name = None
-            if ':=' in column: #assigning a variable
+            # TODO: This isn't working properly right now, but we can ignore it.
+            if ':=' in column: # assigning a variable
                 var_name,column = column.split(':=',1)
             # map names in UI to django functions
             column = normalise_field(column)
@@ -266,23 +271,22 @@ class Interrogator():
 
             if var_name is None:
                 var_name = column
-            # if column.startswith(tuple([a+'::' for a in self.available_aggregations.keys()])) and any(s in column for s in math_infix_symbols.keys()):
+
             if column.startswith(tuple([a+'::' for a in self.available_aggregations.keys()])):
                 annotations[var_name] = self.get_annotation(column)
 
             elif any(s in column for s in math_infix_symbols.keys()):
                 annotations[var_name] = self.normalise_math(column)
-                # query_columns.append(var_name)
                 expression_columns.append(var_name)
-
             else:
                 if column in wrap_sheets.keys():
                     cols = wrap_sheets.get(column).get('columns',[])
                     query_columns = query_columns + cols
                 else:
-                    query_columns.append(var_name)
-                if var_name != column:
-                    annotations[var_name] = F(column)
+                    if var_name == column:
+                        query_columns.append(var_name)
+                    else:
+                        annotations[var_name] = F(column)
             output_columns.append(var_name)
     
         rows = self.get_model_queryset()
@@ -367,28 +371,43 @@ class Interrogator():
                 else:
                     _filters[key] = val
 
+        rows = rows.filter(**_filters)
+        for key,val in filters_all.items():
+            for v in val:
+                rows = rows.filter(**{key:v})
+        rows = rows.exclude(**excludes)
+        rows = rows.values(*query_columns)
+
+        if annotations:
+            rows = rows.annotate(**annotations)
+            rows = rows.filter(**annotation_filters)
+        if order_by:
+            ordering = map(normalise_field,order_by)
+            rows = rows.order_by(*ordering)
+
+        if limit:
+            lim = abs(int(limit))
+            rows = rows[offset:lim]
+
+        return rows, errors, output_columns, base_model_data
+
+    def interrogate(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
+        errors = []
+        base_model_data = {}
+        output_columns = []
+        count = 0
+        rows = []
+
         try:
-            rows = rows.filter(**_filters)
-            for key,val in filters_all.items():
-                for v in val:
-                    rows = rows.filter(**{key:v})
-            rows = rows.exclude(**excludes)
-
-            rows = rows.values(*query_columns)
-
-            if annotations:
-                rows = rows.annotate(**annotations)
-                rows = rows.filter(**annotation_filters)
-            if order_by:
-                ordering = map(normalise_field,order_by)
-                rows = rows.order_by(*ordering)
-    
-            if limit:
-                lim = abs(int(limit))
-                rows = rows[offset:lim]
-
+            rows, errors, output_columns, base_model_data = self.generate_queryset(
+                base_model, columns, filters, order_by, limit, offset
+            )
+            if errors:
+                rows = rows.none()
             rows = list(rows) # force a database hit to check the state of things
             count = len(rows)
+        except di_exceptions.InvalidAnnotationError as e:
+                errors.append(e)
         except ValueError as e:
             rows = []
             if limit < 1:
@@ -400,14 +419,15 @@ class Interrogator():
             errors.append("No rows returned for your query, try broadening your search.")
         except exceptions.FieldError as e:
             rows = []
+            raise
             if str(e).startswith('Cannot resolve keyword'):
                 field = str(e).split("'")[1]
                 errors.append("The requested field '%s' was not found in the database."%field)
             else:
-                raise
                 errors.append("An error was found with your query:\n%s"%e)
         except Exception as e:
             rows = []
+            raise
             errors.append("Something when wrong - %s"%e)
     
         return {
