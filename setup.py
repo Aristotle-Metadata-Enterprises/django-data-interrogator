@@ -38,7 +38,7 @@ setup(
     ],
     keywords='django data analytics',
     install_requires=[
-        'django>3', # I mean obviously you'll have django installed if you want to use this.
+        'django',  # I mean obviously you'll have django installed if you want to use this.
         'django-model-utils',
     ],
     develop_requires=[
