@@ -451,6 +451,7 @@ class Interrogator:
 
         except di_exceptions.InvalidAnnotationError as e:
             errors.append(e)
+
         except ValueError as e:
             rows = []
             if limit is None:
@@ -458,13 +459,14 @@ class Interrogator:
             elif limit < 1:
                 errors.append("Limit must be a number greater than zero")
             else:
-                errors.append("Something when wrong - %s" % e)
+                errors.append("Something went wrong - %s" % e)
+
         except IndexError as e:
             rows = []
             errors.append("No rows returned for your query, try broadening your search.")
+
         except exceptions.FieldError as e:
             rows = []
-            raise
             if str(e).startswith('Cannot resolve keyword'):
                 field = str(e).split("'")[1]
                 errors.append("The requested field '%s' was not found in the database." % field)
@@ -472,8 +474,7 @@ class Interrogator:
                 errors.append("An error was found with your query:\n%s" % e)
         except Exception as e:
             rows = []
-            raise
-            errors.append("Something when wrong - %s" % e)
+            errors.append("Something went wrong - %s" % e)
 
         return {
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,
