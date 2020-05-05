@@ -10,7 +10,7 @@ from django.views.generic import View
 from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, allowable, normalise_field
 
-from typing import List
+from typing import Tuple, Union, Any
 
 
 class InterrogationMixin:
@@ -68,7 +68,8 @@ class InterrogationView(View, InterrogationMixin):
 
 
 class InterrogationAutoComplete(View, InterrogationMixin):
-    """TODO: complete docstring"""
+    """Build list of interrogation suggestions"""
+
     def get_allowed_fields(self) -> None:
         """Override allowed fields because permission checking on them is performed separately"""
         pass
@@ -80,7 +81,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
             content_type='application/json',
         )
 
-    def split_query(self, query) -> List[str]:
+    def split_query(self, query) -> Tuple[Union[str, Any], Any]:
         """Split a query-string into a list of query strings that can be evaluated individually"""
 
         # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
@@ -97,53 +98,66 @@ class InterrogationAutoComplete(View, InterrogationMixin):
             prefix, query = query.split('::', 1)
             prefix = prefix + '::'
 
-        return query.split('.')
+        return prefix, query.split('.')
+
+    def build_related_model_help_text(self, text, field) -> str:
+        """Generate help text for the fields from a related model"""
+        if not text:
+            help_text = f"Related model - {field.related_model._meta.get_verbose_name}"
+        else:
+            help_text = text.lstrip('\n').split('\n')[0]
+            remove = string.whitespace.replace(' ', '')
+            help_text = str(help_text).translate(remove)
+            help_text = ' '.join([c for c in help_text.split(' ') if c])
+
+        return help_text
 
     def get(self, request):
         interrogator = self.get_interrogator()
         model_name = request.GET.get('model', "")
-        query = self.request.GET.get('query', "")
+        query = request.GET.get('query', "")
 
+        # If we haven't been provided a model
+        if not model_name:
+            return self.blank_response()
+
+        # Or the model name is invalid
         try:
             model, _ = interrogator.validate_report_model(model_name)
         except:
-            # The model is invalid
             return self.blank_response()
 
-        if not model_name:  # or not query:
-            return self.blank_response()
+        prefix, args = self.split_query(query)
 
-        args = query.split('.')
+        # Exclude the base model from the calculation
         if len(args) > 1:
             for a in args[:-1]:
-                model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
+                model = [field for field in model._meta.get_fields() if field.name == a][0].related_model
 
         fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
 
+        # Build list of allowed suggestions
         suggestions = []
-        for f in fields:
-            if interrogator.is_excluded_field(model, normalise_field(f.name)):
+        for field in fields:
+            excluded_field = interrogator.is_excluded_field(model, normalise_field(field.name))
+            excluded_model = field.related_model and interrogator.is_excluded_model(field.related_model)
+            if excluded_field or excluded_model:
+                # If it's an excluded field or an excluded model, don't include it as suggestion
                 continue
-            if f.related_model and interrogator.is_excluded_model(f.related_model):
-                continue
-            field_name = '.'.join(args[:-1] + [f.name])
+
+            field_name = '.'.join(args[:-1] + [field.name])
             is_relation = False
-            if f not in model._meta.fields:
-                help_text = f.related_model.__doc__
+            if field not in model._meta.fields:
                 is_relation = True
-                if not help_text:
-                    help_text = "Related model - %s" % f.related_model._meta.get_verbose_name
-                else:
-                    help_text = help_text.lstrip('\n').split('\n')[0]
-                    remove = string.whitespace.replace(' ', '')
-                    help_text = str(help_text).translate(remove)
-                    help_text = ' '.join([c for c in help_text.split(' ') if c])
+                help_text = self.build_related_model_help_text(field.related_model.__doc__, field)
             else:
-                help_text = str(f.help_text)
-            if hasattr(f, 'get_internal_type'):
-                datatype = f.get_internal_type()
+                help_text = str(field.help_text)
+
+            if hasattr(field, 'get_internal_type'):
+                datatype = field.get_internal_type()
             else:
                 datatype = "Many to many relationship"
+
             data = {
                 'value': prefix + field_name,
                 'lookup': args[-1],
