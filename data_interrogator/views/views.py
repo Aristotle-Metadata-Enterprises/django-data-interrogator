@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.views.generic import View
 
 from data_interrogator.forms import InvestigationForm
-from data_interrogator.interrogators import Interrogator, allowable, normalise_field
+from data_interrogator.interrogators import Interrogator, Allowable, normalise_field
 
 from typing import Tuple, Union, Any
 
@@ -24,7 +24,7 @@ class InterrogationMixin:
     interrogator_class = Interrogator
 
     report_models = []
-    allowed = allowable.ALL_APPS
+    allowed = Allowable.ALL_APPS
     excluded = []
 
     def get_interrogator(self):

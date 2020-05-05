@@ -5,7 +5,7 @@ from django.utils.encoding import smart_text
 
 
 from django.db.models import F, Count, Min, Max, Sum, Value, Avg
-from data_interrogator.interrogators import Interrogator, allowable
+from data_interrogator.interrogators import Interrogator, Allowable
 from django.apps import apps
 from django.db.models import Case, Lookup, Sum, Transform, Q, When, F, FloatField, ExpressionWrapper
 from data_interrogator import exceptions
@@ -74,7 +74,7 @@ class TestInterrogators(TestCase):
 
         report = Interrogator(
             report_models=[('shop','Product'),],
-            allowed=allowable.ALL_MODELS,
+            allowed=Allowable.ALL_MODELS,
             excluded=[]
         )
 
@@ -95,7 +95,7 @@ class TestInterrogators(TestCase):
     def test_cannot_start_from_forbidden_model(self):
         report = Interrogator(
             report_models=[('shop','SalesPerson'),],
-            allowed=allowable.ALL_MODELS,
+            allowed=Allowable.ALL_MODELS,
             excluded=[]
         )
         with self.assertRaises(exceptions.ModelNotAllowedException):
@@ -109,7 +109,7 @@ class TestInterrogators(TestCase):
         SalesPerson = apps.get_model('shop', 'SalesPerson')
         report = Interrogator(
             report_models=[('shop','Sale'),],
-            allowed=allowable.ALL_MODELS,
+            allowed=Allowable.ALL_MODELS,
             excluded=[('shop','SalesPerson')]
         )
         self.assertTrue(report.is_excluded_model(SalesPerson))
@@ -129,7 +129,7 @@ class TestInterrogators(TestCase):
         SalesPerson = apps.get_model('shop', 'SalesPerson')
         report = Interrogator(
             report_models=[('shop','Sale'),],
-            allowed=allowable.ALL_MODELS,
+            allowed=Allowable.ALL_MODELS,
             excluded=[('shop')]
         )
         self.assertTrue(report.is_excluded_model(SalesPerson))
@@ -150,7 +150,7 @@ class TestInterrogators(TestCase):
 
         report = Interrogator(
             report_models=[('shop','SalesPerson'),],
-            allowed=allowable.ALL_MODELS,
+            allowed=Allowable.ALL_MODELS,
             excluded=[]
         )
 
@@ -169,7 +169,7 @@ class TestInterrogators(TestCase):
 
         report = Interrogator(
             report_models=[('shop','SalesPerson'),],
-            allowed=allowable.ALL_MODELS,
+            allowed=Allowable.ALL_MODELS,
             excluded=[]
         )
 

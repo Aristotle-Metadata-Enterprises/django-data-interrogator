@@ -2,7 +2,7 @@ from django import forms
 from django.apps import apps
 
 from data_interrogator.fields import CSVMultipleCharField
-from data_interrogator.interrogators import allowable
+from data_interrogator.interrogators import Allowable
 
 
 class InterrogatorForm(forms.Form):
@@ -18,7 +18,7 @@ class InterrogatorForm(forms.Form):
         base_models = self.interrogator.report_models
 
         BASE_MODELS = []
-        if base_models in [allowable.ALL_MODELS, allowable.ALL_APPS]:
+        if base_models in [Allowable.ALL_MODELS, Allowable.ALL_APPS]:
             return [
                 ("%s:%s" % (app.name, model), model.title())
                 for app in apps.app_configs.values()

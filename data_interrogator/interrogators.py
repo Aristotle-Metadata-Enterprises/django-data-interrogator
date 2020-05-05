@@ -1,29 +1,63 @@
-from django.conf import settings
-from django.contrib.auth.decorators import user_passes_test
-from django.core import exceptions
-from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, \
-    CharField
-from django.db.models import functions as func
-from django.http import JsonResponse, QueryDict
-from django.shortcuts import get_object_or_404, redirect, render
-
 from datetime import timedelta
-
-from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
-from data_interrogator import exceptions as di_exceptions
+from typing import Union, Tuple, Any
+from enum import Enum
+import re
 
 from django.apps import apps
+from django.core import exceptions
+from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, Model
+from django.db.models import functions as func
+
+from data_interrogator import exceptions as di_exceptions
+from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
 
 
-def get_base_model(app_label, model):
+math_infix_symbols = {
+    '-': lambda a, b: a - b,
+    '+': lambda a, b: a + b,
+    '/': lambda a, b: a / b,
+    '*': lambda a, b: a * b,
+}
+
+
+def get_base_model(app_label: str, model: str) -> Model:
+    """Get the actual base model, from the """
     return apps.get_model(app_label.lower(), model.lower())
 
 
-def normalise_field(text):
+def normalise_field(text) -> str:
+    """Replace the UI access with the backend Django access"""
     return text.strip().replace('(', '::').replace(')', '').replace(".", "__")
 
 
-def clean_filter(text):
+def normalise_math(expression):
+    """Normalise math from UI """
+    if not any(s in expression for s in math_infix_symbols.keys()):
+        # we're aggregating some mathy things, these are tricky
+        return F(normalise_field(expression))
+
+    math_operator_re = '[\-\/\+\*]'
+
+    a, b = [v.strip() for v in re.split(math_operator_re, expression, 1)]
+    first_operator = re.findall(math_operator_re, expression)[0]
+
+    if first_operator == "-" and a.endswith('date') and b.endswith('date'):
+        expr = ExpressionWrapper(
+            DateDiff(
+                ForceDate(F(a)),
+                ForceDate(F(b))
+            ), output_field=DurationField()
+        )
+    else:
+        expr = ExpressionWrapper(
+            math_infix_symbols[first_operator](F(a), F(b)),
+            output_field=FloatField()
+        )
+    return expr
+
+
+def clean_filter(text) -> Union[str, Tuple[Any, str, Any]]:
+    """Return the (cleaned) filter for replacement"""
     maps = [('<=', 'lte'), ('<', 'lt'), ('>=', 'gte'), ('>', 'gt'), ('<>', 'ne'), ('=', '')]
     for a, b in maps:
         candidate = text.split(a)
@@ -39,23 +73,13 @@ def clean_filter(text):
 # we will ban interrogators from inspecting the User table
 # as well as Revision and Version (which provide audit tracking and are available in django-revision)
 
-math_infix_symbols = {
-    '-': lambda a, b: a - b,
-    '+': lambda a, b: a + b,
-    '/': lambda a, b: a / b,
-    '*': lambda a, b: a * b,
-}
-
-from enum import Enum
-
-
-class allowable(Enum):
+class Allowable(Enum):
     ALL_APPS = 1
     ALL_MODELS = 1
     ALL_FIELDS = 3
 
 
-class Interrogator():
+class Interrogator:
     available_aggregations = {
         "min": Min,
         "max": Max,
@@ -68,17 +92,13 @@ class Interrogator():
         "sumif": SumIf,
     }
     errors = []
-
-    # this list of:
-    #   ('app_label', 'model_name')
-    #   At some point will be this: ('app_label',)
-    report_models = allowable.ALL_MODELS
+    report_models = Allowable.ALL_MODELS
 
     # both of these are lists of either:
     #   ('app_label',)
     #   ('app_label', 'model_name')
     #   Not this yet: ('app_label', 'model_name', ['list of field names'])
-    allowed = allowable.ALL_MODELS
+    allowed = Allowable.ALL_MODELS
     excluded = []
 
     def __init__(self, report_models=None, allowed=None, excluded=None):
@@ -101,19 +121,19 @@ class Interrogator():
             fixed_excluded.append(rule)
         self.excluded = fixed_excluded
 
-        if self.allowed != allowable.ALL_MODELS:
+        if self.allowed != Allowable.ALL_MODELS:
             self.allowed_apps = [
                 i[0] for i in allowed
                 if type(i) is str or type(i) is tuple and len(i) == 1
             ]
 
-        if self.allowed != allowable.ALL_APPS:
+        if self.allowed != Allowable.ALL_APPS:
             self.allowed_models = [
                 i[:2] for i in allowed
                 if type(i) is tuple and len(i) == 2
             ]
         else:
-            self.allowed_models = allowable.ALL_MODELS
+            self.allowed_models = Allowable.ALL_MODELS
 
     def get_model_queryset(self):
         return self.base_model.objects.all()
@@ -129,31 +149,6 @@ class Interrogator():
         args = column.split('__')
         for a in args:
             model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
-
-    def normalise_math(self, expression):
-        if not any(s in expression for s in math_infix_symbols.keys()):
-            # we're aggregating some mathy things, these are tricky
-            return F(normalise_field(expression))
-
-        import re
-        math_operator_re = '[\-\/\+\*]'
-
-        a, b = [v.strip() for v in re.split(math_operator_re, expression, 1)]
-        first_operator = re.findall(math_operator_re, expression)[0]
-
-        if first_operator == "-" and a.endswith('date') and b.endswith('date'):
-            expr = ExpressionWrapper(
-                DateDiff(
-                    ForceDate(F(a)),
-                    ForceDate(F(b))
-                ), output_field=DurationField()
-            )
-        else:
-            expr = ExpressionWrapper(
-                math_infix_symbols[first_operator](F(a), F(b)),
-                output_field=FloatField()
-            )
-        return expr
 
     def get_field_by_name(self, model, field_name):
         return model._meta.get_field(field_name)
@@ -192,7 +187,7 @@ class Interrogator():
                 field, cond = field.split(',', 1)
             except:
                 raise di_exceptions.InvalidAnnotationError("SUMIF must have a condition")
-            field = self.normalise_math(field)
+            field = normalise_math(field)
             conditions = {}
             for condition in cond.split(','):
                 condition_key, condition_val = condition.split('=', 1)
@@ -211,7 +206,7 @@ class Interrogator():
             field, i, j = (field.split(',') + [None])[0:3]
             annotation = self.available_aggregations[agg](field, i, j)
         else:
-            field = self.normalise_math(field)
+            field = normalise_math(field)
             annotation = self.available_aggregations[agg](field, distinct=False)
         return annotation
 
@@ -230,7 +225,7 @@ class Interrogator():
         base_model = apps.get_model(app_label.lower(), model.lower())
 
         extra_data = {}
-        if self.report_models == allowable.ALL_MODELS:
+        if self.report_models == Allowable.ALL_MODELS:
             return base_model, extra_data
 
         for opts in self.report_models:

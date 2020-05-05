@@ -5,7 +5,7 @@ from django.urls import include, path
 from django.views.generic.base import TemplateView
 
 from data_interrogator import views
-from data_interrogator.interrogators import allowable
+from data_interrogator.interrogators import Allowable
 
 urlpatterns = [
     path(r'', TemplateView.as_view(template_name="home.html")),
@@ -26,8 +26,8 @@ urlpatterns = [
         template_name="typeahead.html"
     ).urls)),
     path(r'full_report/', include(views.InterrogationAutocompleteUrls(
-        report_models=allowable.ALL_MODELS,
-        allowed=allowable.ALL_MODELS,
+        report_models=Allowable.ALL_MODELS,
+        allowed=Allowable.ALL_MODELS,
         template_name="typeahead.html"
     ).urls)),
 ]
