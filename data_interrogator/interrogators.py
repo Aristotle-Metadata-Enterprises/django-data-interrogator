@@ -12,6 +12,7 @@ from data_interrogator import exceptions as di_exceptions
 from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
 
 
+# Utility functions
 math_infix_symbols = {
     '-': lambda a, b: a - b,
     '+': lambda a, b: a + b,
@@ -144,6 +145,9 @@ class Interrogator:
     def process_annotation(self, column):
         pass
 
+    def is_allowed_model(self, model):
+        pass
+
     def verify_column(self, column):
         model = self.base_model
         args = column.split('__')
@@ -153,18 +157,27 @@ class Interrogator:
     def get_field_by_name(self, model, field_name):
         return model._meta.get_field(field_name)
 
-    def is_excluded_field(sekf, field_path, base_model=None):
+    def is_excluded_field(self, field_path, base_model=None) -> bool:
         """
         Accepts dundered path from model
+        TODO: currently we're not doing per field permission checks, add this later
         """
-        # checking_model = base_model or self.base_model
         return False
 
-    def has_forbidden_join(self, column, base_model=None):
+    def is_excluded_model(self, model_class):
+        app_label = model_class._meta.app_label
+        model_name = model_class._meta.model_name
+
+        if self.allowed == Allowable.ALL_MODELS:
+            return False
+        return app_label in self.excluded or (app_label, model_name) in self.excluded
+
+    def has_forbidden_join(self, column, base_model=None) -> bool:
+        """Return whether a forbidden join exists in the query"""
         checking_model = base_model or self.base_model
-        forbidden = False
+
         joins = column.split('__')
-        for i, relation in enumerate(joins):
+        for _, relation in enumerate(joins):
             if checking_model:
                 try:
                     attr = self.get_field_by_name(checking_model, relation)
@@ -175,7 +188,8 @@ class Interrogator:
                     checking_model = attr.related_model
                 except exceptions.FieldDoesNotExist:
                     pass
-        return forbidden
+
+        return False
 
     def get_base_annotations(self):
         return {}
@@ -210,16 +224,6 @@ class Interrogator:
             annotation = self.available_aggregations[agg](field, distinct=False)
         return annotation
 
-    def is_allowed_model(self, model):
-        pass
-
-    def is_excluded_model(self, model_class):
-        app_label = model_class._meta.app_label
-        model_name = model_class._meta.model_name
-
-        # if self.allowed = allowable.ALL_MODELS
-        return app_label in self.excluded or (app_label, model_name) in self.excluded
-
     def validate_report_model(self, base_model):
         app_label, model = base_model.split(':', 1)
         base_model = apps.get_model(app_label.lower(), model.lower())
@@ -236,12 +240,9 @@ class Interrogator:
         raise di_exceptions.ModelNotAllowedException()
 
     def generate_queryset(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
-
         errors = []
-        base_model_data = {}
         annotation_filters = {}
         output_columns = []
-        count = 0
 
         annotations = self.get_base_annotations()
         query_columns = []
@@ -251,13 +252,14 @@ class Interrogator:
         expression_columns = []
         for column in columns:
             if column == "":
-                continue  # do nothings for empty fields
+                # If the field is empty, don't do anything
+                continue
 
             var_name = None
             # TODO: This isn't working properly right now, but we can ignore it.
-            if ':=' in column:  # assigning a variable
+            if ':=' in column:  # Assigning a variable
                 var_name, column = column.split(':=', 1)
-            # map names in UI to django functions
+            # Map names in UI to django functions
             column = normalise_field(column)
 
             if self.has_forbidden_join(column):
@@ -265,7 +267,6 @@ class Interrogator:
                     "Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(
                         column))
                 continue
-
             if '::' in column:
                 check_col = column.split('::', 1)[-1]
                 if self.has_forbidden_join(check_col):
@@ -460,11 +461,8 @@ class PivotInterrogator(Interrogator):
         return aggs
 
     def pivot(self):
-        # only accept the first two valid columns
-        self.columns = [
-                           normalise_field(c) for c in self.columns
-                           if not self.has_forbidden_join(column=c)
-                       ][:2]
+        # Only accept the first two valid columns
+        self.columns = [normalise_field(c) for c in self.columns if not self.has_forbidden_join(column=c)][:2]
 
         data = self.interrogate()
         out_rows = {}
