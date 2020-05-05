@@ -222,7 +222,7 @@ class Interrogator:
             conditions = {}
             for condition in cond.split(','):
                 condition_key, condition_val = condition.split('=', 1)
-                conditions[normalise_field(condition_key)] =        normalise_field(condition_val)
+                conditions[normalise_field(condition_key)] = normalise_field(condition_val)
             annotation = self.available_aggregations[agg](field=field, **conditions)
         elif agg == 'join':
             fields = []
