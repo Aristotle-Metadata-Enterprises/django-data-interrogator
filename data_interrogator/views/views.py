@@ -2,13 +2,15 @@ import json
 import string
 
 from django import http
-from django.http import QueryDict
+from django.http import QueryDict, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.generic import View
 
 from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, allowable, normalise_field
+
+from typing import List
 
 
 class InterrogationMixin:
@@ -33,6 +35,7 @@ class InterrogationMixin:
 
 
 class InterrogationView(View, InterrogationMixin):
+    """The primary interrogation view"""
     def get(self, request):
         data = {}
         form = self.form_class(interrogator=self.get_interrogator())
@@ -65,50 +68,59 @@ class InterrogationView(View, InterrogationMixin):
 
 
 class InterrogationAutoComplete(View, InterrogationMixin):
-    def get_allowed_fields(self):
+    """TODO: complete docstring"""
+    def get_allowed_fields(self) -> None:
+        """Override allowed fields because permission checking on them is performed separately"""
         pass
 
-    def blank_response(self):
-        return http.HttpResponse(
+    def blank_response(self) -> HttpResponse:
+        """Return an empty response"""
+        return HttpResponse(
             json.dumps([]),
             content_type='application/json',
         )
 
+    def split_query(self, query) -> List[str]:
+        """Split a query-string into a list of query strings that can be evaluated individually"""
+
+        # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
+        prefix = ""
+        if " " in query:
+            prefix, query = query.rsplit(' ', 1)
+            prefix = prefix + ' '
+        elif "(" in query:
+            # ignore any command at the start
+            prefix, query = query.split('(', 1)
+            prefix = prefix + '('
+        elif "::" in query:
+            # ignore any command at the start
+            prefix, query = query.split('::', 1)
+            prefix = prefix + '::'
+
+        return query.split('.')
+
     def get(self, request):
         interrogator = self.get_interrogator()
         model_name = request.GET.get('model', "")
-        q = self.request.GET.get('q', "")
+        query = self.request.GET.get('query', "")
 
         try:
             model, _ = interrogator.validate_report_model(model_name)
         except:
+            # The model is invalid
             return self.blank_response()
 
-        if not model_name:  # or not q:
+        if not model_name:  # or not query:
             return self.blank_response()
 
-        # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
-        prefix = ""
-        if " " in q:
-            prefix, q = q.rsplit(' ', 1)
-            prefix = prefix + ' '
-        elif "(" in q:
-            # ignore any command at the start
-            prefix, q = q.split('(', 1)
-            prefix = prefix + '('
-        elif "::" in q:
-            # ignore any command at the start
-            prefix, q = q.split('::', 1)
-            prefix = prefix + '::'
-
-        args = q.split('.')
+        args = query.split('.')
         if len(args) > 1:
             for a in args[:-1]:
                 model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
 
         fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
 
-        out = []
+        suggestions = []
         for f in fields:
             if interrogator.is_excluded_field(model, normalise_field(f.name)):
                 continue
@@ -140,17 +152,20 @@ class InterrogationAutoComplete(View, InterrogationMixin):
                 'help': help_text,
                 'datatype': str(datatype),
             }
-            out.append(data)
+            suggestions.append(data)
 
         return http.HttpResponse(
-            json.dumps(out),
+            json.dumps(suggestions),
             content_type='application/json',
         )
 
 
 class InterrogationAutocompleteUrls:
     """
-    Generate and return a list of the the Interrogator autocomplete URLs
+    Generates:
+        A list of URLs for an url configuration for:
+            - The main interrogator view
+            - An autocomplete url
     """
 
     interrogator_view_class = InterrogationView
