@@ -20,6 +20,23 @@ math_infix_symbols = {
     '*': lambda a, b: a * b,
 }
 
+# Large unit multipliers to filter across
+BIG_MULTIPLIERS = {
+    'day': 1,
+    'week': 7,
+    'fortnight': 14,
+    'month': 30,  # close enough
+    'year': 365,
+    'decade': 10 * 365,
+}
+# Small unit multipliers to filter across
+LITTLE_MULTIPLIERS = {
+    'second': 1,
+    'minute': 60,
+    'hour': 60 * 60,
+    'microfortnight': 1.2,  # sure why not?
+}
+
 
 def get_base_model(app_label: str, model: str) -> Model:
     """Get the actual base model, from the """
@@ -240,6 +257,7 @@ class Interrogator:
         raise di_exceptions.ModelNotAllowedException()
 
     def generate_queryset(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
+        """Generate queryset from each value """
         errors = []
         annotation_filters = {}
         output_columns = []
@@ -251,6 +269,8 @@ class Interrogator:
 
         expression_columns = []
         for column in columns:
+            # Populate each column
+
             if column == "":
                 # If the field is empty, don't do anything
                 continue
@@ -262,11 +282,14 @@ class Interrogator:
             # Map names in UI to django functions
             column = normalise_field(column)
 
+            # Check if the column has permission
             if self.has_forbidden_join(column):
                 errors.append(
                     "Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(
                         column))
                 continue
+
+            # Check aggregation
             if '::' in column:
                 check_col = column.split('::', 1)[-1]
                 if self.has_forbidden_join(check_col):
@@ -301,7 +324,6 @@ class Interrogator:
         excludes = {}
         filters_all = {}
         for i, expression in enumerate(filters):
-            # cleaned = clean_filter(normalise_field(expression))
             field, exp, val = clean_filter(normalise_field(expression))
             if self.has_forbidden_join(field):
                 errors.append(
@@ -339,26 +361,10 @@ class Interrogator:
                     period = period.rstrip('s')  # remove plurals
 
                     kwargs = {}
-                    big_multipliers = {
-                        'day': 1,
-                        'week': 7,
-                        'fortnight': 14,  # really?
-                        'month': 30,  # close enough
-                        'year': 365,
-                        'decade': 10 * 365,  # wise guy huh?
-                    }
-
-                    little_multipliers = {
-                        'second': 1,
-                        'minute': 60,
-                        'hour': 60 * 60,
-                        'microfortnight': 1.2,  # sure why not?
-                    }
-
-                    if big_multipliers.get(period, None):
-                        kwargs['days'] = int(val) * big_multipliers[period]
-                    elif little_multipliers.get(period, None):
-                        kwargs['seconds'] = int(val) * little_multipliers[period]
+                    if BIG_MULTIPLIERS.get(period, None):
+                        kwargs['days'] = int(val) * BIG_MULTIPLIERS[period]
+                    elif LITTLE_MULTIPLIERS.get(period, None):
+                        kwargs['seconds'] = int(val) * LITTLE_MULTIPLIERS[period]
 
                     annotation_filters[key] = timedelta(**kwargs)
 
