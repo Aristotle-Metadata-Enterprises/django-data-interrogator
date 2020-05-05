@@ -410,7 +410,9 @@ class Interrogator():
                 errors.append(e)
         except ValueError as e:
             rows = []
-            if limit < 1:
+            if limit is None:
+                errors.append("Limit must be a number")
+            elif limit < 1:
                 errors.append("Limit must be a number greater than zero")
             else:
                 errors.append("Something when wrong - %s"%e)

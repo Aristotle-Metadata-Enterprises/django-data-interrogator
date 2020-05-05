@@ -1,15 +1,13 @@
 from django import forms
 from django.apps import apps
 
-from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
-
 from data_interrogator.fields import CSVMultipleCharField
 from data_interrogator.interrogators import allowable
 
 
 class InterrogatorForm(forms.Form):
-    lead_base_model = forms.ChoiceField(choices=[],required=True,label="Initial object")
+    lead_base_model = forms.ChoiceField(choices=[], required=True, label="Initial object")
+
     def __init__(self, *args, interrogator, **kwargs):
         super(InterrogatorForm, self).__init__(*args, **kwargs)
         self.interrogator = interrogator
@@ -18,11 +16,11 @@ class InterrogatorForm(forms.Form):
     @property
     def base_models(self):
         base_models = self.interrogator.report_models
-        
+
         BASE_MODELS = []
         if base_models in [allowable.ALL_MODELS, allowable.ALL_APPS]:
-            return [ 
-                ("%s:%s"%(app.name,model), model.title())
+            return [
+                ("%s:%s" % (app.name, model), model.title())
                 for app in apps.app_configs.values()
                 for model in app.models
             ]
@@ -31,10 +29,10 @@ class InterrogatorForm(forms.Form):
             if len(base_model) == 1:
                 app_name = base_model[0]
                 for model in apps.get_app_config(app_name).models:
-                    BASE_MODELS.append(("%s:%s"%(app_name,model),model))
+                    BASE_MODELS.append(("%s:%s" % (app_name, model), model))
             else:
-                app,model = base_model[:2]
-                BASE_MODELS.append(("%s:%s"%(app,model),model))
+                app, model = base_model[:2]
+                BASE_MODELS.append(("%s:%s" % (app, model), model))
         return BASE_MODELS
 
 
