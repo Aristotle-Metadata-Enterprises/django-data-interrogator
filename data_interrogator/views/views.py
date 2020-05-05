@@ -11,13 +11,12 @@ from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, allowable, normalise_field
 
 
-# Because of the risk of data leakage from User, Revision and Version tables,
-# If a django user hasn't explicitly set up excluded models,
-# we will ban interrogators from inspecting the User table
-# as well as Revision and Version (which provide audit tracking and are available in django-revision)
-
-
 class InterrogationMixin:
+    """ Because of the risk of data leakage from User, Revision and Version tables,
+        If a django user hasn't explicitly set up excluded models,
+        we will ban interrogators from inspecting the User table
+        as well as Revision and Version (which provide audit tracking and are available in django-revision)"""
+
     form_class = InvestigationForm
     template_name = 'data_interrogator/table_builder.html'
     interrogator_class = Interrogator
@@ -37,19 +36,20 @@ class InterrogationView(View, InterrogationMixin):
     def get(self, request):
         data = {}
         form = self.form_class(interrogator=self.get_interrogator())
+
         has_valid_columns = any([True for c in request.GET.getlist('columns', []) if c != ''])
         if request.method == 'GET' and has_valid_columns:
-            # create a form instance and populate it with data from the request:
+            # Create a form instance and populate it with data from the request:
             form = self.form_class(request.GET, interrogator=self.get_interrogator())
-            # check whether it's valid:
             if form.is_valid():
-                # process the data in form.cleaned_data as required
+                # Process the data in form.cleaned_data as required
                 filters = form.cleaned_data.get('filter_by', [])
                 order_by = form.cleaned_data.get('sort_by', [])
                 columns = form.cleaned_data.get('columns', [])
                 base_model = form.cleaned_data['lead_base_model']
+
                 if hasattr(request, 'user') and request.user.is_staff and request.GET.get('action', '') == 'makestatic':
-                    # populate the appropriate GET variables and redirect to the admin site
+                    # Populate the appropriate GET variables and redirect to the admin site
                     base = reverse("admin:data_interrogator_datatable_add")
                     vals = QueryDict('', mutable=True)
                     vals.setlist('columns', columns)
@@ -59,6 +59,7 @@ class InterrogationView(View, InterrogationMixin):
                     return redirect('%s?%s' % (base, vals.urlencode()))
                 else:
                     data = self.interrogate(base_model, columns=columns, filters=filters, order_by=order_by)
+
         data['form'] = form
         return render(request, self.template_name, data)
 
@@ -147,10 +148,9 @@ class InterrogationAutoComplete(View, InterrogationMixin):
         )
 
 
-class InterrogationAutocompleteUrls():
+class InterrogationAutocompleteUrls:
     """
-    A backend for allowing new users to join the site by creating a new user
-    associated with a new organization.
+    Generate and return a list of the the Interrogator autocomplete URLs
     """
 
     interrogator_view_class = InterrogationView
