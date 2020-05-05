@@ -1,9 +1,12 @@
+# You need `pandas` installed to
+
 import datetime
 import random
 from bisect import bisect
 from decimal import Decimal
+
 from django.utils import timezone
-# To run the data generation module, you need pandas installed
+
 
 def delete_initial_data(apps, schema_editor):
     Product = apps.get_model('shop', 'Product')

@@ -1,13 +1,13 @@
-from data_interrogator import views
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from django.conf.urls.static import static
 from django.views.generic.base import TemplateView
-from data_interrogator.interrogators import allowable
-# urls.py
 
-#app_name = 'data_interrogator'
+from data_interrogator import views
+from data_interrogator.interrogators import allowable
+
+
 urlpatterns = [
     path(r'', TemplateView.as_view(template_name="home.html")),
     path(r'', views.InterrogationView.as_view(template_name="base.html"), name='datatablepage'),
