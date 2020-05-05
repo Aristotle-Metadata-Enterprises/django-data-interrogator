@@ -222,7 +222,7 @@ class Interrogator:
             conditions = {}
             for condition in cond.split(','):
                 condition_key, condition_val = condition.split('=', 1)
-                conditions[normalise_field(condition_key)] = normalise_field(condition_val)
+                conditions[normalise_field(condition_key)] =        normalise_field(condition_val)
             annotation = self.available_aggregations[agg](field=field, **conditions)
         elif agg == 'join':
             fields = []
@@ -286,6 +286,7 @@ class Interrogator:
         output_columns = []
         query_columns = []
 
+        # Generate filters
         for column in columns:
             var_name = None
             if column == "":
@@ -327,11 +328,14 @@ class Interrogator:
             output_columns.append(var_name)
 
         rows = self.get_model_queryset()
+
+        # Generate filters
         _filters = {}
         excludes = {}
         filters_all = {}
-        for i, expression in enumerate(filters):
+        for index, expression in enumerate(filters):
             field, exp, val = clean_filter(normalise_field(expression))
+
             if self.has_forbidden_join(field):
                 errors.append(
                     f"Filtering with the column [{field}] is forbidden, this filter is removed from the output."
@@ -352,10 +356,10 @@ class Interrogator:
                     val = bool(val)
 
             if '::' in field:
-                # we got an annotated filter
+                # We've got an annotated filter
                 agg, f = field.split('::', 1)
-                field = 'f%s%s' % (i, field)
-                key = 'f%s%s' % (i, key)
+                field = 'f%s%s' % (index, field)
+                key = 'f%s%s' % (index, key)
                 annotations[field] = self.available_aggregations[agg](f, distinct=True)
                 annotation_filters[key] = val
             elif key in annotations.keys():
@@ -430,8 +434,9 @@ class Interrogator:
             )
             if errors:
                 rows = rows.none()
-            rows = list(rows)  # force a database hit to check the state of things
+            rows = list(rows)  # Force a database hit to check the in database state
             count = len(rows)
+
         except di_exceptions.InvalidAnnotationError as e:
             errors.append(e)
         except ValueError as e:
