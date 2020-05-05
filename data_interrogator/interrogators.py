@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Union, Tuple, Any
+from typing import Union, Tuple, Any, List
 from enum import Enum
 import re
 
@@ -256,51 +256,59 @@ class Interrogator:
         self.base_model = None
         raise di_exceptions.ModelNotAllowedException()
 
-    def generate_queryset(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
-        """Generate queryset from each value """
+    def check_for_forbidden_column(self, column) -> List[str]:
+        """Check if column is forbidden for whatever reason, and return the value of it"""
+        errors: List[str] = []
+
+        # Check if the column has permission
+        if self.has_forbidden_join(column):
+            errors.append(
+                "Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(
+                    column))
+        # Check aggregation includes a forbidden column
+        if '::' in column:
+            check_col = column.split('::', 1)[-1]
+            if self.has_forbidden_join(check_col):
+                errors.append(
+                    "Aggregating tables using the column [{}] is forbidden, this column is removed from the output.".format(
+                        column))
+        return errors
+
+    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
         errors = []
         annotation_filters = {}
-        output_columns = []
 
-        annotations = self.get_base_annotations()
-        query_columns = []
         self.base_model, base_model_data = self.validate_report_model(base_model)
         wrap_sheets = base_model_data.get('wrap_sheets', {})
 
+        annotations = self.get_base_annotations()
         expression_columns = []
-        for column in columns:
-            # Populate each column
+        output_columns = []
+        query_columns = []
 
+        for column in columns:
+            var_name = None
             if column == "":
                 # If the field is empty, don't do anything
                 continue
 
-            var_name = None
-            # TODO: This isn't working properly right now, but we can ignore it.
-            if ':=' in column:  # Assigning a variable
+            if ':=' in column:
                 var_name, column = column.split(':=', 1)
+
             # Map names in UI to django functions
             column = normalise_field(column)
-
-            # Check if the column has permission
-            if self.has_forbidden_join(column):
-                errors.append(
-                    "Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(
-                        column))
-                continue
-
-            # Check aggregation
-            if '::' in column:
-                check_col = column.split('::', 1)[-1]
-                if self.has_forbidden_join(check_col):
-                    errors.append(
-                        "Aggregating tables using the column [{}] is forbidden, this column is removed from the output.".format(
-                            column))
-                    continue
 
             if var_name is None:
                 var_name = column
 
+            # Check if the column has permission
+            column_permission_errors = self.check_for_forbidden_column(column)
+            if column_permission_errors:
+                # If there are permission errors, add to error list, and don't continue
+                errors.extend(column_permission_errors)
+                continue
+
+            # Build columns
             if column.startswith(tuple([a + '::' for a in self.available_aggregations.keys()])):
                 annotations[var_name] = self.get_annotation(column)
 
@@ -319,7 +327,6 @@ class Interrogator:
             output_columns.append(var_name)
 
         rows = self.get_model_queryset()
-
         _filters = {}
         excludes = {}
         filters_all = {}
@@ -327,8 +334,8 @@ class Interrogator:
             field, exp, val = clean_filter(normalise_field(expression))
             if self.has_forbidden_join(field):
                 errors.append(
-                    "Filtering with the column [{}] is forbidden, this filter is removed from the output.".format(
-                        field))
+                    f"Filtering with the column [{field}] is forbidden, this filter is removed from the output."
+                )
                 continue
 
             key = '%s%s' % (field.strip(), exp)
@@ -336,7 +343,7 @@ class Interrogator:
 
             if val.startswith('~'):
                 val = F(val[1:])
-            elif key.endswith('date'):  # in key:
+            elif key.endswith('date'):
                 val = (val + '-01-01')[:10]  # If we are filtering by a date, make sure its 'date-like'
             elif key.endswith('__isnull'):
                 if val == 'False' or val == '0':
@@ -406,7 +413,11 @@ class Interrogator:
 
         return rows, errors, output_columns, base_model_data
 
-    def interrogate(self, base_model, columns=[], filters=[], order_by=[], limit=None, offset=0):
+    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
+        if order_by is None: order_by = []
+        if filters is None: filters = []
+        if columns is None: columns = []
+
         errors = []
         base_model_data = {}
         output_columns = []
