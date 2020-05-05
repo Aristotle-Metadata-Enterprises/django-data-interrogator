@@ -1,8 +1,10 @@
-from django import http
-from django.views.generic import View
 import json
 import string
-from .utils import get_base_model
+
+from django import http
+from django.views.generic import View
+
+from data_interrogator.views.utils import get_base_model
 
 
 class FieldLookupTypeahead(View):
