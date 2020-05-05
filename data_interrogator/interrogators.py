@@ -274,6 +274,79 @@ class Interrogator:
                         column))
         return errors
 
+    def generate_filters(self, filters, annotations, expression_columns):
+        errors = []
+        annotation_filters = {}
+        _filters = {}
+        excludes = {}
+        filters_all = {}
+
+        for index, expression in enumerate(filters):
+            field, exp, val = clean_filter(normalise_field(expression))
+
+            if self.has_forbidden_join(field):
+                errors.append(
+                    f"Filtering with the column [{field}] is forbidden, this filter is removed from the output."
+                )
+                continue
+
+            key = '%s%s' % (field.strip(), exp)
+            val = val.strip()
+
+            if val.startswith('~'):
+                val = F(val[1:])
+            elif key.endswith('date'):
+                val = (val + '-01-01')[:10]  # If we are filtering by a date, make sure its 'date-like'
+            elif key.endswith('__isnull'):
+                if val == 'False' or val == '0':
+                    val = False
+                else:
+                    val = bool(val)
+
+            if '::' in field:
+                # We've got an annotated filter
+                agg, f = field.split('::', 1)
+                field = 'f%s%s' % (index, field)
+                key = 'f%s%s' % (index, key)
+                annotations[field] = self.available_aggregations[agg](f, distinct=True)
+                annotation_filters[key] = val
+            elif key in annotations.keys():
+                annotation_filters[key] = val
+            elif key.split('__')[0] in expression_columns:
+                k = key.split('__')[0]
+                if 'date' in k and key.endswith('date') or 'date' in str(annotations[k]):
+                    val, period = (val.rsplit(' ', 1) + ['days'])[0:2]
+                    # this line is complicated, just in case there is no period or space
+                    period = period.rstrip('s')  # remove plurals
+
+                    kwargs = {}
+                    if BIG_MULTIPLIERS.get(period, None):
+                        kwargs['days'] = int(val) * BIG_MULTIPLIERS[period]
+                    elif LITTLE_MULTIPLIERS.get(period, None):
+                        kwargs['seconds'] = int(val) * LITTLE_MULTIPLIERS[period]
+
+                    annotation_filters[key] = timedelta(**kwargs)
+
+                else:
+                    annotation_filters[key] = val
+
+            elif key.endswith('__all'):
+                key = key.rstrip('_all')
+                val = [v for v in val.split(',')]
+                filters_all[key] = val
+            else:
+                exclude = key.endswith('!')
+                if exclude:
+                    key = key[:-1]
+                if key.endswith('__in'):
+                    val = [v for v in val.split(',')]
+                if exclude:
+                    excludes[key] = val
+                else:
+                    _filters[key] = val
+
+        return filters_all, _filters,  annotations, expression_columns, excludes
+
     def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
         errors = []
         annotation_filters = {}
@@ -330,72 +403,11 @@ class Interrogator:
         rows = self.get_model_queryset()
 
         # Generate filters
-        _filters = {}
-        excludes = {}
-        filters_all = {}
-        for index, expression in enumerate(filters):
-            field, exp, val = clean_filter(normalise_field(expression))
-
-            if self.has_forbidden_join(field):
-                errors.append(
-                    f"Filtering with the column [{field}] is forbidden, this filter is removed from the output."
-                )
-                continue
-
-            key = '%s%s' % (field.strip(), exp)
-            val = val.strip()
-
-            if val.startswith('~'):
-                val = F(val[1:])
-            elif key.endswith('date'):
-                val = (val + '-01-01')[:10]  # If we are filtering by a date, make sure its 'date-like'
-            elif key.endswith('__isnull'):
-                if val == 'False' or val == '0':
-                    val = False
-                else:
-                    val = bool(val)
-
-            if '::' in field:
-                # We've got an annotated filter
-                agg, f = field.split('::', 1)
-                field = 'f%s%s' % (index, field)
-                key = 'f%s%s' % (index, key)
-                annotations[field] = self.available_aggregations[agg](f, distinct=True)
-                annotation_filters[key] = val
-            elif key in annotations.keys():
-                annotation_filters[key] = val
-            elif key.split('__')[0] in expression_columns:
-                k = key.split('__')[0]
-                if 'date' in k and key.endswith('date') or 'date' in str(annotations[k]):
-                    val, period = (val.rsplit(' ', 1) + ['days'])[
-                                  0:2]  # this line is complicated, just in case there is no period or space
-                    period = period.rstrip('s')  # remove plurals
-
-                    kwargs = {}
-                    if BIG_MULTIPLIERS.get(period, None):
-                        kwargs['days'] = int(val) * BIG_MULTIPLIERS[period]
-                    elif LITTLE_MULTIPLIERS.get(period, None):
-                        kwargs['seconds'] = int(val) * LITTLE_MULTIPLIERS[period]
-
-                    annotation_filters[key] = timedelta(**kwargs)
-
-                else:
-                    annotation_filters[key] = val
-
-            elif key.endswith('__all'):
-                key = key.rstrip('_all')
-                val = [v for v in val.split(',')]
-                filters_all[key] = val
-            else:
-                exclude = key.endswith('!')
-                if exclude:
-                    key = key[:-1]
-                if key.endswith('__in'):
-                    val = [v for v in val.split(',')]
-                if exclude:
-                    excludes[key] = val
-                else:
-                    _filters[key] = val
+        filters_all, _filters, annotations, expression_columns, excludes = self.generate_filters(
+            filters=filters,
+            annotations=annotations,
+            expression_columns=expression_columns
+        )
 
         rows = rows.filter(**_filters)
         for key, val in filters_all.items():
