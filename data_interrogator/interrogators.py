@@ -1,7 +1,7 @@
-from datetime import timedelta
-from typing import Union, Tuple, Any, List
-from enum import Enum
 import re
+from datetime import timedelta
+from enum import Enum
+from typing import Union, Tuple, Any, List
 
 from django.apps import apps
 from django.core import exceptions
@@ -10,7 +10,6 @@ from django.db.models import functions as func
 
 from data_interrogator import exceptions as di_exceptions
 from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
-
 
 # Utility functions
 math_infix_symbols = {
