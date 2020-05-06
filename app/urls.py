@@ -14,6 +14,12 @@ urlpatterns = [
     path(r'admin/', include("data_interrogator.admin.urls")),
     path(r'admin/', admin.site.urls),
     path(r'data/', include("data_interrogator.urls")),
+    path(r'api/product_report/', include(views.InterrogationAPIAutocompleteUrls(
+        report_models=[("shop", "Product")],
+        allowed=[("shop")],
+        excluded=[("shop", "SalesPerson")],
+        template_name="typeahead.html"
+    ).urls)),
     path(r'product_report/', include(views.InterrogationAutocompleteUrls(
         report_models=[("shop", "Product")],
         allowed=[("shop")],
@@ -31,5 +37,4 @@ urlpatterns = [
         template_name="typeahead.html"
     ).urls)),
 ]
-
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
