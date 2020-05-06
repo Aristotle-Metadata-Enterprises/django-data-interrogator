@@ -1,16 +1,14 @@
 import json
 import string
+from typing import Tuple, Union, Any
 
 from django import http
-from django.http import QueryDict, HttpResponse
-from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
 from django.views.generic import View
 
 from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, Allowable, normalise_field
-
-from typing import Tuple, Union, Any
 
 
 class InterrogationMixin:
@@ -35,36 +33,59 @@ class InterrogationMixin:
 
 
 class InterrogationView(View, InterrogationMixin):
-    """The primary interrogation view"""
+    """The primary interrogation view, gets interrogation data and renders to a template"""
+    def get_form(self):
+        return self.form_class(interrogator=self.get_interrogator())
+
+    def get_request_data(self):
+        form_data = {}
+        form = self.form_class(self.request.GET, interrogator=self.get_interrogator())
+        if form.is_valid():
+            # Get cleaned data
+            form_data['filters'] = form.cleaned_data.get('filter_by', [])
+            form_data['order_by'] = form.cleaned_data.get('sort_by', [])
+            form_data['columns'] = form.cleaned_data.get('columns', [])
+            form_data['base_model'] = form.cleaned_data['lead_base_model']
+        return form_data
+
+    def render_to_response(self, data):
+        return render(self.request, self.template_name, data)
+
     def get(self, request):
         data = {}
-        form = self.form_class(interrogator=self.get_interrogator())
+        form = self.get_form()
 
         has_valid_columns = any([True for c in request.GET.getlist('columns', []) if c != ''])
-        if request.method == 'GET' and has_valid_columns:
+        if has_valid_columns:
             # Create a form instance and populate it with data from the request:
-            form = self.form_class(request.GET, interrogator=self.get_interrogator())
-            if form.is_valid():
-                # Process the data in form.cleaned_data as required
-                filters = form.cleaned_data.get('filter_by', [])
-                order_by = form.cleaned_data.get('sort_by', [])
-                columns = form.cleaned_data.get('columns', [])
-                base_model = form.cleaned_data['lead_base_model']
+            request_params = self.get_request_data()
+            if request_params:
+                #  If there was cleanable form data
+                # Generate the interrogation data
+                data = self.interrogate(request_params['base_model'],
+                                        columns=request_params['columns'],
+                                        filters=request_params['filters'],
+                                        order_by=request_params['order_by'])
+        if form:
+            data['form'] = form
+        return self.render_to_response(data)
 
-                if hasattr(request, 'user') and request.user.is_staff and request.GET.get('action', '') == 'makestatic':
-                    # Populate the appropriate GET variables and redirect to the admin site
-                    base = reverse("admin:data_interrogator_datatable_add")
-                    vals = QueryDict('', mutable=True)
-                    vals.setlist('columns', columns)
-                    vals.setlist('filters', filters)
-                    vals.setlist('orders', order_by)
-                    vals['base_model'] = base_model
-                    return redirect('%s?%s' % (base, vals.urlencode()))
-                else:
-                    data = self.interrogate(base_model, columns=columns, filters=filters, order_by=order_by)
 
-        data['form'] = form
-        return render(request, self.template_name, data)
+class JSONInterrogationView(InterrogationView):
+    """The interrogation view as a JSON view """
+    def get_form(self):
+        return None  # This is an API, there's no form
+
+    def get_request_data(self):
+        """Extract request data from query parameters in the API"""
+        request_data = {'filters': self.request.GET.getlist('filter_by', []),
+                        'order_by': self.request.GET.getlist('sort_by', []),
+                        'columns': self.request.GET.getlist('columns', []),
+                        'base_model': self.request.GET.get('lead_base_model')}
+        return request_data
+
+    def render_to_response(self, data):
+        return JsonResponse(data)
 
 
 class InterrogationAutoComplete(View, InterrogationMixin):
