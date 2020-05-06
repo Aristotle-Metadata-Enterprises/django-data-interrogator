@@ -40,12 +40,17 @@ class InterrogationView(View, InterrogationMixin):
     def get_request_data(self):
         form_data = {}
         form = self.form_class(self.request.GET, interrogator=self.get_interrogator())
+
         if form.is_valid():
             # Get cleaned data
             form_data['filters'] = form.cleaned_data.get('filter_by', [])
             form_data['order_by'] = form.cleaned_data.get('sort_by', [])
             form_data['columns'] = form.cleaned_data.get('columns', [])
             form_data['base_model'] = form.cleaned_data['lead_base_model']
+
+            # Add bound form to data
+            form_data['form'] = form
+
         return form_data
 
     def render_to_response(self, data):
@@ -66,6 +71,9 @@ class InterrogationView(View, InterrogationMixin):
                                         columns=request_params['columns'],
                                         filters=request_params['filters'],
                                         order_by=request_params['order_by'])
+                # Update form to use the bound form
+                form = request_params['form']
+
         if form:
             data['form'] = form
         return self.render_to_response(data)
@@ -230,3 +238,13 @@ class InterrogationAutocompleteUrls:
                  **path_kwargs),
             path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
         ]
+
+
+class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
+    """
+    Generates:
+        A list of URLs for an url configuration for:
+            - The main interrogator view (.. as an API)
+            - An autocomplete url
+    """
+    interrogator_view_class = JSONInterrogationView
