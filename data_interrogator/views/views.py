@@ -7,9 +7,10 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
 from django.contrib.auth.mixins import UserPassesTestMixin
+
 from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, Allowable, normalise_field
-
+from data_interrogator.utils import get_all_base_models
 
 class InterrogationMixin:
     """ Because of the risk of data leakage from User, Revision and Version tables,
@@ -68,6 +69,7 @@ class InterrogationView(UserPassesTestMixin, View, InterrogationMixin):
         return form_data
 
     def render_to_response(self, data):
+        # Add base models here so that the
         return render(self.request, self.template_name, data)
 
     def get(self, request):
@@ -94,7 +96,7 @@ class InterrogationView(UserPassesTestMixin, View, InterrogationMixin):
         return self.render_to_response(data)
 
 
-class JSONInterrogationView(InterrogationView):
+class ApiInterrogationView(InterrogationView):
     """The interrogation view as a JSON view """
     def get_form(self):
         return None  # This is an API, there's no form
@@ -115,6 +117,10 @@ class JSONInterrogationView(InterrogationView):
         return request_data
 
     def render_to_response(self, data):
+        # Because we don't have a form to provide this data used for base_model selection, add it in her
+        # This could be an additional view, but because it's coupled to the configuration of each API
+        # we can add it in here
+        data['model_choices'] =  get_all_base_models(self.get_interrogator().report_models)
         return JsonResponse(data)
 
 
@@ -271,4 +277,4 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
             - The main interrogator view (.. as an API)
             - An autocomplete url
     """
-    interrogator_view_class = JSONInterrogationView
+    interrogator_view_class = ApiInterrogationView
