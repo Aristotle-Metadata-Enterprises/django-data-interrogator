@@ -32,17 +32,20 @@ urlpatterns = [
         report_models=[("shop", "Product")],
         allowed=[("shop")],
         excluded=[("shop", "SalesPerson")],
-        template_name="typeahead.html"
+        template_name="typeahead.html",
+        test_func=allow_all_users
     ).urls)),
     path(r'shop_report/', include(views.InterrogationAutocompleteUrls(
         report_models=[("shop",)],
         allowed=[("shop",)],
-        template_name="typeahead.html"
+        template_name="typeahead.html",
+        test_func=allow_all_users
     ).urls)),
     path(r'full_report/', include(views.InterrogationAutocompleteUrls(
         report_models=Allowable.ALL_MODELS,
         allowed=Allowable.ALL_MODELS,
-        template_name="typeahead.html"
+        template_name="typeahead.html",
+        test_func=allow_all_users
     ).urls)),
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
