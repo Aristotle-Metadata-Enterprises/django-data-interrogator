@@ -5,6 +5,8 @@ from django.urls import include, path
 from django.views.generic.base import TemplateView
 
 from data_interrogator import views
+from data_interrogator.views.views import InterrogationAPIAutocompleteUrls
+
 from data_interrogator.interrogators import Allowable
 
 urlpatterns = [
@@ -14,7 +16,7 @@ urlpatterns = [
     path(r'admin/', include("data_interrogator.admin.urls")),
     path(r'admin/', admin.site.urls),
     path(r'data/', include("data_interrogator.urls")),
-    path(r'api/product_report/', include(views.InterrogationAPIAutocompleteUrls(
+    path(r'api/product_report/', include(InterrogationAPIAutocompleteUrls(
         report_models=[("shop", "Product")],
         allowed=[("shop")],
         excluded=[("shop", "SalesPerson")],

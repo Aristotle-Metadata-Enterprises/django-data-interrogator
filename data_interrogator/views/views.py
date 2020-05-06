@@ -71,8 +71,9 @@ class InterrogationView(View, InterrogationMixin):
                                         columns=request_params['columns'],
                                         filters=request_params['filters'],
                                         order_by=request_params['order_by'])
-                # Update form to use the bound form
-                form = request_params['form']
+                if form:
+                    # Update form to use the bound form
+                    form = request_params['form']
 
         if form:
             data['form'] = form
@@ -86,10 +87,17 @@ class JSONInterrogationView(InterrogationView):
 
     def get_request_data(self):
         """Extract request data from query parameters in the API"""
-        request_data = {'filters': self.request.GET.getlist('filter_by', []),
-                        'order_by': self.request.GET.getlist('sort_by', []),
-                        'columns': self.request.GET.getlist('columns', []),
+        request_data = {'filters': self.request.GET.get('filter_by', []),
+                        'order_by': self.request.GET.get('sort_by', []),
+                        'columns': self.request.GET.get('columns', []),
                         'base_model': self.request.GET.get('lead_base_model')}
+
+        for parameter, selection in request_data.items():
+            if not parameter == 'base_model':
+                if selection == "":
+                    request_data[parameter] = []
+                else:
+                    request_data[parameter] = selection.split("||")
         return request_data
 
     def render_to_response(self, data):
