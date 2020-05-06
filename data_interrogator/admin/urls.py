@@ -1,7 +1,6 @@
 from django.urls import path, include
-from data_interrogator.admin import views
-from data_interrogator.interrogators import allowable
 
+from data_interrogator.admin import views
 
 urlpatterns = [
     # url(r'^data_interrogator/analytics/$', views.AdminInterrogationRoom.as_view(), name='admin_analytics'),

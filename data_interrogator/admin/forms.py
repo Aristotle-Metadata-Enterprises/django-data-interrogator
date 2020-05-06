@@ -1,11 +1,7 @@
 from django import forms
-from django.apps import apps
 
-from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
-
-from data_interrogator.forms import InterrogatorForm, PivotTableForm, InterrogatorTableForm
 from data_interrogator.fields import CSVMultipleCharField
+from data_interrogator.forms import PivotTableForm, InterrogatorTableForm
 
 
 class AdminPivotTableForm(PivotTableForm):

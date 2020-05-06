@@ -1,7 +1,7 @@
 from django import forms
 
-class CSVMultipleCharField(forms.CharField):
 
+class CSVMultipleCharField(forms.CharField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.widget.attrs = {'class': 'multicharfields'}

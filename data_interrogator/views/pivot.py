@@ -1,12 +1,7 @@
-from django.conf import settings
-from django.core import exceptions
-from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, CharField
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import render
 from django.views.generic import View
 
-from datetime import timedelta
-
-from data_interrogator import db, forms
+from data_interrogator import forms
 from data_interrogator.interrogators import PivotInterrogator
 
 
