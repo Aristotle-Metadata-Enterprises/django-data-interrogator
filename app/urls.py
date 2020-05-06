@@ -9,6 +9,11 @@ from data_interrogator.views.views import InterrogationAPIAutocompleteUrls
 
 from data_interrogator.interrogators import Allowable
 
+
+def allow_all_users():
+    return True
+
+
 urlpatterns = [
     path(r'', TemplateView.as_view(template_name="home.html")),
     path(r'', views.InterrogationView.as_view(template_name="base.html"), name='datatablepage'),
@@ -20,7 +25,8 @@ urlpatterns = [
         report_models=[("shop", "Product")],
         allowed=[("shop")],
         excluded=[("shop", "SalesPerson")],
-        template_name="typeahead.html"
+        template_name="typeahead.html",
+        test_func=allow_all_users
     ).urls)),
     path(r'product_report/', include(views.InterrogationAutocompleteUrls(
         report_models=[("shop", "Product")],

@@ -1,12 +1,12 @@
 import json
 import string
-from typing import Tuple, Union, Any
+from typing import Tuple, Union, Any, Callable
 
 from django import http
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
-
+from django.contrib.auth.mixins import UserPassesTestMixin
 from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, Allowable, normalise_field
 
@@ -32,8 +32,22 @@ class InterrogationMixin:
         return self.get_interrogator().interrogate(*args, **kwargs)
 
 
-class InterrogationView(View, InterrogationMixin):
+class InterrogationView(UserPassesTestMixin, View, InterrogationMixin):
     """The primary interrogation view, gets interrogation data and renders to a template"""
+    test_func = 'is_superuser'
+
+    def get_test_func(self) -> Callable:
+        if self.test_func is None:
+            self.test_func = 'is_superuser'
+        if type(self.test_func) == str:
+            return getattr(self, self.test_func)
+        else:
+            return self.test_func
+
+    def is_superuser(self) -> bool:
+        """A sensible default test_func that is superuser_only if one is not passed through during creation"""
+        return self.request.user.is_superuser
+
     def get_form(self):
         return self.form_class(interrogator=self.get_interrogator())
 
@@ -228,6 +242,7 @@ class InterrogationAutocompleteUrls:
         self.excluded = kwargs.get('excluded', self.interrogator_view_class.excluded)
         self.template_name = kwargs.get('template_name', self.interrogator_view_class.template_name)
         self.path_name = kwargs.get('path_name', None)
+        self.test_func = kwargs.get('test_func', None)
 
     @property
     def urls(self):
@@ -242,7 +257,8 @@ class InterrogationAutocompleteUrls:
         if self.path_name:
             path_kwargs.update({'name': self.path_name})
         return [
-            path('', view=self.interrogator_view_class.as_view(template_name=self.template_name, **kwargs),
+            path('', view=self.interrogator_view_class.as_view(template_name=self.template_name,
+                                                               test_func=self.test_func, **kwargs),
                  **path_kwargs),
             path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
         ]
