@@ -12,6 +12,7 @@ from data_interrogator.forms import InvestigationForm
 from data_interrogator.interrogators import Interrogator, Allowable, normalise_field
 from data_interrogator.utils import get_all_base_models
 
+
 class InterrogationMixin:
     """ Because of the risk of data leakage from User, Revision and Version tables,
         If a django user hasn't explicitly set up excluded models,
@@ -33,8 +34,7 @@ class InterrogationMixin:
         return self.get_interrogator().interrogate(*args, **kwargs)
 
 
-class InterrogationView(UserPassesTestMixin, View, InterrogationMixin):
-    """The primary interrogation view, gets interrogation data and renders to a template"""
+class UserHasPermissionMixin(UserPassesTestMixin):
     test_func = 'is_superuser'
 
     def get_test_func(self) -> Callable:
@@ -48,6 +48,10 @@ class InterrogationView(UserPassesTestMixin, View, InterrogationMixin):
     def is_superuser(self) -> bool:
         """A sensible default test_func that is superuser_only if one is not passed through during creation"""
         return self.request.user.is_superuser
+
+
+class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
+    """The primary interrogation view, gets interrogation data and renders to a template"""
 
     def get_form(self):
         return self.form_class(interrogator=self.get_interrogator())
@@ -96,6 +100,13 @@ class InterrogationView(UserPassesTestMixin, View, InterrogationMixin):
         return self.render_to_response(data)
 
 
+class BaseModelOptionsApi(UserHasPermissionMixin, InterrogationMixin, View):
+    """Return a Object containing an Array of the base model options accessible"""
+    def get(self, request):
+        options = {'base_model_options': get_all_base_models(self.get_interrogator().report_models)}
+        return JsonResponse(options)
+
+
 class ApiInterrogationView(InterrogationView):
     """The interrogation view as a JSON view """
     def get_form(self):
@@ -117,10 +128,6 @@ class ApiInterrogationView(InterrogationView):
         return request_data
 
     def render_to_response(self, data):
-        # Because we don't have a form to provide this data used for base_model selection, add it in her
-        # This could be an additional view, but because it's coupled to the configuration of each API
-        # we can add it in here
-        data['model_choices'] =  get_all_base_models(self.get_interrogator().report_models)
         return JsonResponse(data)
 
 
@@ -278,3 +285,21 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
             - An autocomplete url
     """
     interrogator_view_class = ApiInterrogationView
+    interrogator_base_model_options_class = BaseModelOptionsApi
+
+    @property
+    def urls(self):
+        # Add options class to API view, as it's not needed in the main view because there's a form
+        # to populate these options
+        from django.urls import path
+        kwargs = {
+            'report_models': self.report_models,
+            'allowed': self.allowed,
+            'excluded': self.excluded,
+        }
+        urls = super().urls
+        urls.append(
+            path('options', view=self.interrogator_base_model_options_class.as_view(test_func=self.test_func, **kwargs))
+        )
+        return urls
+
