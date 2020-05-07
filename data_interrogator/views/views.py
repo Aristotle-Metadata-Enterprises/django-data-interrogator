@@ -289,6 +289,8 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
 
     @property
     def urls(self):
+        # Add options class to API view, as it's not needed in the main view because there's a form
+        # to populate these options
         from django.urls import path
         kwargs = {
             'report_models': self.report_models,
