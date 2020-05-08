@@ -21,7 +21,7 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -89,16 +89,3 @@ TEMPLATES = [
 ]
 
 USE_TZ = True
-
-# DATA_INTERROGATION_DOSSIER = {
-#     'base_models': [
-#         {   "model":("shop","Sale"),
-#             "wrap_sheets": {            },
-#             "aliases": { },
-#         },
-#         {'model':("shop","Product")},
-#         {'model':("shop","Branch")},
-#         {'model':("shop","SalesPerson")},
-#     ],
-#     'excluded_models' : ["User","Revision","Version"],
-# }
