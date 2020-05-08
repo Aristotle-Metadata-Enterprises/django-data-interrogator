@@ -2,6 +2,7 @@ from django.db import models
 
 
 class Product(models.Model):
+    verbose_name = "Product for Sale"
     KIDS = 'Kids'
     MEN = 'Men'
     WOMEN = 'Women'
@@ -19,6 +20,7 @@ class Product(models.Model):
 
 
 class Branch(models.Model):
+    verbose_name = "Sales Branch"
     VIC = 'VIC'
     NSW = 'NSW'
     QLD = 'QLD'
@@ -41,6 +43,7 @@ class SalesPerson(models.Model):
 
 
 class Sale(models.Model):
+    verbose_name = "Sale"
     VIC = 'VIC'
     NSW = 'NSW'
     QLD = 'QLD'

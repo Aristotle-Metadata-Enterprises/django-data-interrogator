@@ -25,7 +25,6 @@ urlpatterns = [
         report_models=[("shop", "Product")],
         allowed=[("shop")],
         excluded=[("shop", "SalesPerson")],
-        template_name="typeahead.html",
         test_func=allow_all_users
     ).urls)),
     path(r'product_report/', include(views.InterrogationAutocompleteUrls(
