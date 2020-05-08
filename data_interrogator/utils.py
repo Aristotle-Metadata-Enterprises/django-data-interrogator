@@ -3,19 +3,16 @@ from data_interrogator.interrogators import Allowable
 from django.apps import apps
 from django.db.models import Model, FieldDoesNotExist
 
-def field_exists(klass, field):
-    try:
-        klass._meta.get_field(field)
-        return True
-    except FieldDoesNotExist:
-        return False
+import logging
+logger = logging.getLogger(__name__)
+logger.debug(f"Logging started for {__name__}")
 
 
 def get_optimal_model_name(model: Model) -> str:
     """Get the optimal model name from a model"""
-    if field_exists(model, 'interrogator_name'):
+    if hasattr(model, 'interrogator_name'):
         return getattr(model, 'interrogator_name')
-    elif field_exists(model, 'verbose_name'):
+    elif hasattr(model, 'verbose_name'):
         return getattr(model, 'verbose_name')
     else:
         return model.__name__.title()
