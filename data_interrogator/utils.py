@@ -1,6 +1,21 @@
 """A collection of useful functions that didn't really belong anywhere else"""
 from data_interrogator.interrogators import Allowable
 from django.apps import apps
+from django.db.models import Model, FieldDoesNotExist
+
+import logging
+logger = logging.getLogger(__name__)
+logger.debug(f"Logging started for {__name__}")
+
+
+def get_optimal_model_name(model: Model) -> str:
+    """Get the optimal model name from a model"""
+    if hasattr(model, 'interrogator_name'):
+        return getattr(model, 'interrogator_name')
+    elif hasattr(model, 'verbose_name'):
+        return getattr(model, 'verbose_name')
+    else:
+        return model.__name__.title()
 
 
 def get_all_base_models(bases):
@@ -13,11 +28,11 @@ def get_all_base_models(bases):
                 # (database field, human readable name)
                 if app.verbose_name in all_models:
                     all_models[app.verbose_name] = (
-                        all_models[app.verbose_name], (f'{app.name}:{model.__name__}', model.verbose_name)
+                        all_models[app.verbose_name], (f'{app.name}:{model.__name__}', get_optimal_model_name(model))
                     )
                 else:
                     all_models[app.verbose_name] = (
-                        (f"{app.name}:{str(model.__name__)}", model.verbose_name),
+                        (f"{app.name}:{str(model.__name__)}", get_optimal_model_name(model)),
                     )
         return list(all_models.items())
 
@@ -31,11 +46,11 @@ def get_all_base_models(bases):
                 # (database field, human readable name)
                 if app.verbose_name in all_models:
                     all_models[app.verbose_name] = (
-                        all_models[app.verbose_name], (f"{app_name}:{model.__name__}", model.verbose_name)
+                        all_models[app.verbose_name], (f"{app_name}:{model.__name__}", get_optimal_model_name(model))
                     )
                 else:
                     all_models[app.verbose_name] = (
-                        (f"{app_name}:{model.name}", model.verbose_name),
+                        (f"{app_name}:{model.name}", get_optimal_model_name(model)),
                     )
         else:
             # Base model is a (app_name, base_model) tuple
@@ -44,10 +59,10 @@ def get_all_base_models(bases):
             model = app.get_model(model)
             if app.verbose_name in all_models:
                 all_models[app.verbose_name] = (
-                    all_models[app.verbose_name], (f"{app_name}:{str(model.__name__)}", model.verbose_name)
+                    all_models[app.verbose_name], (f"{app_name}:{str(model.__name__)}", get_optimal_model_name(model))
                 )
             else:
-                all_models[app.verbose_name] = ((f"{app_name}:{str(model.__name__)}", model.verbose_name),)
+                all_models[app.verbose_name] = ((f"{app_name}:{str(model.__name__)}", get_optimal_model_name(model)),)
 
     all_models = list(all_models.items())
     return all_models

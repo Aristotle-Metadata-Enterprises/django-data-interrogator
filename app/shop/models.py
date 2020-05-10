@@ -3,6 +3,7 @@ from django.db import models
 
 class Product(models.Model):
     verbose_name = "Product for Sale"
+    interrogator_name = "Products"
     KIDS = 'Kids'
     MEN = 'Men'
     WOMEN = 'Women'
