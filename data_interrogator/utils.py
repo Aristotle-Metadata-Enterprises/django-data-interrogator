@@ -37,7 +37,7 @@ def get_all_base_models(bases):
                 # (database field, human readable name)
                 if app.verbose_name in all_models:
                     all_models[app.verbose_name] = append_to_group(
-                        all_models[app.verbose_name], (f'{app.name}:{model.__name__}', get_optimal_model_name(model))
+                        all_models[app.verbose_name], tuple([f'{app.name}:{model.__name__}', get_optimal_model_name(model)])
                     )
                 else:
                     all_models[app.verbose_name] = (
@@ -55,11 +55,11 @@ def get_all_base_models(bases):
                 # (database field, human readable name)
                 if app.verbose_name in all_models:
                     all_models[app.verbose_name] = append_to_group(
-                        all_models[app.verbose_name], (f"{app_name}:{model.__name__}", get_optimal_model_name(model))
+                        all_models[app.verbose_name], tuple([f"{app_name}:{model.__name__}", get_optimal_model_name(model)])
                     )
                 else:
                     all_models[app.verbose_name] = (
-                        (f"{app_name}:{model.name}", get_optimal_model_name(model))
+                        (f"{app_name}:{model.name}", get_optimal_model_name(model)),
                     )
         else:
             # Base model is a (app_name, base_model) tuple
@@ -68,10 +68,10 @@ def get_all_base_models(bases):
             model = app.get_model(model)
             if app.verbose_name in all_models:
                 all_models[app.verbose_name] = append_to_group(
-                    all_models[app.verbose_name], (f"{app_name}:{str(model.__name__)}", get_optimal_model_name(model))
+                    all_models[app.verbose_name], tuple([f"{app_name}:{str(model.__name__)}", get_optimal_model_name(model)])
                 )
             else:
-                all_models[app.verbose_name] = (f"{app_name}:{str(model.__name__)}", get_optimal_model_name(model))
+                all_models[app.verbose_name] = tuple([(f"{app_name}:{str(model.__name__)}", get_optimal_model_name(model))])
 
     all_models = list(all_models.items())
     return all_models
