@@ -102,6 +102,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
 
 class BaseModelOptionsApi(UserHasPermissionMixin, InterrogationMixin, View):
     """Return a Object containing an Array of the base model options accessible"""
+
     def get(self, request):
         options = {'base_model_options': get_all_base_models(self.get_interrogator().report_models)}
         return JsonResponse(options)
@@ -109,6 +110,7 @@ class BaseModelOptionsApi(UserHasPermissionMixin, InterrogationMixin, View):
 
 class ApiInterrogationView(InterrogationView):
     """The interrogation view as a JSON view """
+
     def get_form(self):
         return None  # This is an API, there's no form
 
@@ -254,7 +256,6 @@ class InterrogationAutocompleteUrls:
         self.allowed = kwargs.get('allowed', self.interrogator_view_class.allowed)
         self.excluded = kwargs.get('excluded', self.interrogator_view_class.excluded)
         self.template_name = kwargs.get('template_name', self.interrogator_view_class.template_name)
-        self.path_name = kwargs.get('path_name', None)
         self.test_func = kwargs.get('test_func', None)
 
     @property
@@ -266,14 +267,11 @@ class InterrogationAutocompleteUrls:
             'excluded': self.excluded,
         }
 
-        path_kwargs = {}
-        if self.path_name:
-            path_kwargs.update({'name': self.path_name})
         return [
             path('', view=self.interrogator_view_class.as_view(template_name=self.template_name,
                                                                test_func=self.test_func, **kwargs),
-                 **path_kwargs),
-            path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
+                 name='interrogator'),
+            path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs), name='autocomplete'),
         ]
 
 
@@ -299,7 +297,8 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
         }
         urls = super().urls
         urls.append(
-            path('options', view=self.interrogator_base_model_options_class.as_view(test_func=self.test_func, **kwargs))
+            path('options',
+                 view=self.interrogator_base_model_options_class.as_view(test_func=self.test_func, **kwargs),
+                 name="options")
         )
         return urls
-
