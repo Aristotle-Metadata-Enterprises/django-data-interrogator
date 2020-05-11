@@ -272,8 +272,8 @@ class InterrogationAutocompleteUrls:
         return [
             path('', view=self.interrogator_view_class.as_view(template_name=self.template_name,
                                                                test_func=self.test_func, **kwargs),
-                 **path_kwargs),
-            path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs)),
+                 name="interrogator", **path_kwargs),
+            path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs), name="autocomplete"),
         ]
 
 
@@ -299,7 +299,9 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
         }
         urls = super().urls
         urls.append(
-            path('options', view=self.interrogator_base_model_options_class.as_view(test_func=self.test_func, **kwargs))
+            path('options',
+                 view=self.interrogator_base_model_options_class.as_view(test_func=self.test_func, **kwargs),
+                 name="options")
         )
         return urls
 
