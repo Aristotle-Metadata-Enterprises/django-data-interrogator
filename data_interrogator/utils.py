@@ -14,9 +14,9 @@ logger.debug(f"Logging started for {__name__}")
 
 def get_optimal_model_name(model: Model) -> str:
     """Get the optimal model name from a model"""
-    name = f'{model._meta.app_label}:{model.__name___}'
+    name = f'{model._meta.app_label}:{model.__name__}'
 
-    if hasattr(settings, 'INTERROGATOR_NAME_OVERRIDES') and name in settings.INTEROGATOR_NAME_OVERRIDES:
+    if hasattr(settings, 'INTERROGATOR_NAME_OVERRIDES') and name in settings.INTERROGATOR_NAME_OVERRIDES:
         return settings.INTERROGATOR_NAME_OVERRIDES[name]
     elif hasattr(model, 'interrogator_name'):
         return getattr(model, 'interrogator_name')
