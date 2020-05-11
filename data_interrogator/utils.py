@@ -1,5 +1,7 @@
 """A collection of useful functions that didn't really belong anywhere else"""
 from data_interrogator.interrogators import Allowable
+from django.conf import settings
+
 from django.apps import apps
 from django.db.models import Model
 
@@ -12,7 +14,11 @@ logger.debug(f"Logging started for {__name__}")
 
 def get_optimal_model_name(model: Model) -> str:
     """Get the optimal model name from a model"""
-    if hasattr(model, 'interrogator_name'):
+    name = f'{model._meta.app_label}:{model.__name__}'
+
+    if hasattr(settings, 'INTERROGATOR_NAME_OVERRIDES') and name in settings.INTERROGATOR_NAME_OVERRIDES:
+        return settings.INTERROGATOR_NAME_OVERRIDES[name]
+    elif hasattr(model, 'interrogator_name'):
         return getattr(model, 'interrogator_name')
     elif hasattr(model, 'verbose_name'):
         return getattr(model, 'verbose_name')
