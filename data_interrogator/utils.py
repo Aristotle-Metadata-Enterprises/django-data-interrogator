@@ -20,10 +20,8 @@ def get_optimal_model_name(model: Model) -> str:
         return settings.INTERROGATOR_NAME_OVERRIDES[name]
     elif hasattr(model, 'interrogator_name'):
         return getattr(model, 'interrogator_name')
-    elif hasattr(model, 'verbose_name'):
-        return getattr(model, 'verbose_name')
     else:
-        return model.__name__.title()
+        return model._meta.verbose_name.title()
 
 
 def append_to_group(app_group, app_model_pair) -> Tuple:
