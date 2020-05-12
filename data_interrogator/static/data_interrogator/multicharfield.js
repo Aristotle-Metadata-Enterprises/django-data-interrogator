@@ -34,7 +34,6 @@ function multichar_init() {
             $("#id_"+section+" input.typeahead_field.tt-input").each(function() {
                 data.push($(this).val());
             });
-            console.log(data)
             $("#id_hidden_"+section).val(data.join("||"));
         }
         return true;
