@@ -121,12 +121,6 @@ class ApiInterrogationView(InterrogationView):
                         'columns': self.request.GET.get('columns', []),
                         'base_model': self.request.GET.get('lead_base_model')}
 
-        for parameter, selection in request_data.items():
-            if not parameter == 'base_model':
-                if selection == "":
-                    request_data[parameter] = []
-                else:
-                    request_data[parameter] = selection.split("||")
         return request_data
 
     def render_to_response(self, data):
