@@ -124,9 +124,13 @@ class ApiInterrogationView(InterrogationView):
         transformed_request = {}
 
         for param, selection in request_data.items():
-            if str(selection) == "['']":
-                selection = []
-            transformed_request[param] = selection
+            if selection == ['']:
+                transformed_request[param] = []
+            else:
+                if type(selection) == list:
+                    transformed_request[param] = selection[0].split(',')
+                else:
+                    transformed_request[param] = selection
 
         return transformed_request
 
