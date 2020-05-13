@@ -116,12 +116,19 @@ class ApiInterrogationView(InterrogationView):
 
     def get_request_data(self):
         """Extract request data from query parameters in the API"""
-        request_data = {'filters': self.request.GET.get('filter_by', []),
-                        'order_by': self.request.GET.get('sort_by', []),
-                        'columns': self.request.GET.get('columns', []),
+        request_data = {'filters': self.request.GET.getlist('filter_by', []),
+                        'order_by': self.request.GET.getlist('sort_by', []),
+                        'columns': self.request.GET.getlist('columns', []),
                         'base_model': self.request.GET.get('lead_base_model')}
 
-        return request_data
+        transformed_request = {}
+
+        for param, selection in request_data.items():
+            if str(selection) == "['']":
+                selection = []
+            transformed_request[param] = selection
+
+        return transformed_request
 
     def render_to_response(self, data):
         return JsonResponse(data)
