@@ -186,7 +186,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
     def get(self, request):
         interrogator = self.get_interrogator()
         model_name = request.GET.get('model', "")
-        query = request.GET.get('query', "")
+        query = request.GET.get('q', "")
 
         # If we haven't been provided a model
         if not model_name:
@@ -199,6 +199,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
             return self.blank_response()
 
         prefix, args = self.split_query(query)
+        print([prefix, args])
 
         # Exclude the base model from the calculation
         if len(args) > 1:
