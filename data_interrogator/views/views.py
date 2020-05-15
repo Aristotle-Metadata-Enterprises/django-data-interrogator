@@ -192,19 +192,18 @@ class InterrogationAutoComplete(View, InterrogationMixin):
         if not model_name:
             return self.blank_response()
 
-        # Or the model name is invalid
         try:
             model, _ = interrogator.validate_report_model(model_name)
         except:
+            # Or the model name is invalid
             return self.blank_response()
 
         prefix, args = self.split_query(query)
-        print([prefix, args])
 
-        # Exclude the base model from the calculation
         if len(args) > 1:
-            for a in args[:-1]:
-                model = [field for field in model._meta.get_fields() if field.name == a][0].related_model
+            # If more than the base model has been provided
+            for arg in args[:-1]:
+                model = [field for field in model._meta.get_fields() if field.name == arg][0].related_model
 
         fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
 
@@ -218,6 +217,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
                 continue
 
             field_name = '.'.join(args[:-1] + [field.name])
+
             is_relation = False
             if field not in model._meta.fields:
                 is_relation = True
@@ -232,6 +232,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
 
             data = {
                 'value': prefix + field_name,
+                'field_name': field.name,
                 'lookup': args[-1],
                 'name': field_name,
                 'is_relation': is_relation,
