@@ -201,7 +201,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
         prefix, args = self.split_query(query)
 
         if len(args) > 1:
-            # If more than the base model has been provided
+            # Jump across the dots to iteratively determine the 2nd to last field, which is the model
             for arg in args[:-1]:
                 model = [field for field in model._meta.get_fields() if field.name == arg][0].related_model
 
@@ -218,12 +218,11 @@ class InterrogationAutoComplete(View, InterrogationMixin):
 
             field_name = '.'.join(args[:-1] + [field.name])
 
-            is_relation = False
-            if field not in model._meta.fields:
-                is_relation = True
+            if field.is_relation:
                 help_text = self.build_related_model_help_text(field.related_model.__doc__, field)
             else:
                 help_text = str(field.help_text)
+            is_relation = field.is_relation
 
             if hasattr(field, 'get_internal_type'):
                 datatype = field.get_internal_type()
