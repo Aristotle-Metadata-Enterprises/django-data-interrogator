@@ -118,6 +118,7 @@ class Interrogator:
     allowed = Allowable.ALL_MODELS
     excluded = []
 
+
     def __init__(self, report_models=None, allowed=None, excluded=None):
         if report_models is not None:
             self.report_models = report_models
@@ -151,6 +152,10 @@ class Interrogator:
             ]
         else:
             self.allowed_models = Allowable.ALL_MODELS
+
+    def is_hidden_field(self, field):
+        """Returns whether a field begins with an underscore and so is hidden"""
+        return field.name.startswith('_')
 
     def get_model_queryset(self):
         return self.base_model.objects.all()

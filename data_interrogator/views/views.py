@@ -210,7 +210,10 @@ class InterrogationAutoComplete(View, InterrogationMixin):
         # Build list of allowed suggestions
         suggestions = []
         for field in fields:
-            excluded_field = interrogator.is_excluded_field(model, normalise_field(field.name))
+            excluded_field = (
+                interrogator.is_excluded_field(model, normalise_field(field.name)) or
+                interrogator.is_hidden_field(field)
+            )
             excluded_model = field.related_model and interrogator.is_excluded_model(field.related_model)
             if excluded_field or excluded_model:
                 # If it's an excluded field or an excluded model, don't include it as suggestion
