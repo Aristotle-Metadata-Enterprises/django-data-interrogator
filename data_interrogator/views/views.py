@@ -116,18 +116,29 @@ class ApiInterrogationView(InterrogationView):
 
     def get_request_data(self):
         """Extract request data from query parameters in the API"""
-        request_data = {'filters': self.request.GET.get('filter_by', []),
-                        'order_by': self.request.GET.get('sort_by', []),
-                        'columns': self.request.GET.get('columns', []),
+        request_data = {'filters': self.request.GET.getlist('filter_by', []),
+                        'order_by': self.request.GET.getlist('sort_by', []),
+                        'columns': self.request.GET.getlist('columns', []),
                         'base_model': self.request.GET.get('lead_base_model')}
 
-        return request_data
+        transformed_request = {}
+
+        for param, selection in request_data.items():
+            if selection == ['']:
+                transformed_request[param] = []
+            else:
+                if type(selection) == list:
+                    transformed_request[param] = selection[0].split(',')
+                else:
+                    transformed_request[param] = selection
+
+        return transformed_request
 
     def render_to_response(self, data):
         return JsonResponse(data)
 
 
-class InterrogationAutoComplete(View, InterrogationMixin):
+class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin):
     """Build list of interrogation suggestions"""
 
     def get_allowed_fields(self) -> None:
@@ -175,43 +186,46 @@ class InterrogationAutoComplete(View, InterrogationMixin):
     def get(self, request):
         interrogator = self.get_interrogator()
         model_name = request.GET.get('model', "")
-        query = request.GET.get('query', "")
+        query = request.GET.get('q', "")
 
         # If we haven't been provided a model
         if not model_name:
             return self.blank_response()
 
-        # Or the model name is invalid
         try:
             model, _ = interrogator.validate_report_model(model_name)
         except:
+            # Or the model name is invalid
             return self.blank_response()
 
         prefix, args = self.split_query(query)
 
-        # Exclude the base model from the calculation
         if len(args) > 1:
-            for a in args[:-1]:
-                model = [field for field in model._meta.get_fields() if field.name == a][0].related_model
+            # Jump across the dots to iteratively determine the 2nd to last field, which is the model
+            for arg in args[:-1]:
+                model = [field for field in model._meta.get_fields() if field.name == arg][0].related_model
 
         fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
 
         # Build list of allowed suggestions
         suggestions = []
         for field in fields:
-            excluded_field = interrogator.is_excluded_field(model, normalise_field(field.name))
+            excluded_field = (
+                interrogator.is_excluded_field(model, normalise_field(field.name)) or
+                interrogator.is_hidden_field(field)
+            )
             excluded_model = field.related_model and interrogator.is_excluded_model(field.related_model)
             if excluded_field or excluded_model:
                 # If it's an excluded field or an excluded model, don't include it as suggestion
                 continue
 
             field_name = '.'.join(args[:-1] + [field.name])
-            is_relation = False
-            if field not in model._meta.fields:
-                is_relation = True
+
+            if field.is_relation:
                 help_text = self.build_related_model_help_text(field.related_model.__doc__, field)
             else:
                 help_text = str(field.help_text)
+            is_relation = field.is_relation
 
             if hasattr(field, 'get_internal_type'):
                 datatype = field.get_internal_type()
@@ -220,6 +234,7 @@ class InterrogationAutoComplete(View, InterrogationMixin):
 
             data = {
                 'value': prefix + field_name,
+                'field_name': field.name,
                 'lookup': args[-1],
                 'name': field_name,
                 'is_relation': is_relation,
