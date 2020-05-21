@@ -138,7 +138,7 @@ class ApiInterrogationView(InterrogationView):
         return JsonResponse(data)
 
 
-class InterrogationAutoComplete(View, InterrogationMixin):
+class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin):
     """Build list of interrogation suggestions"""
 
     def get_allowed_fields(self) -> None:
