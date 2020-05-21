@@ -46,10 +46,10 @@ def get_all_base_models(bases):
 
     if bases in [Allowable.ALL_MODELS, Allowable.ALL_APPS]:
         for app in apps.get_app_configs():
-            model_name = get_model_name(model)
-            human_readable_name = get_human_readable_model_name(model)
             for model in app.models:
-                # (database field, human readable name)
+                model_name = get_model_name(model)
+                human_readable_name = get_human_readable_model_name(model)
+
                 if app.verbose_name in all_models:
                     all_models[app.verbose_name] = append_to_group(
                         all_models[app.verbose_name],
