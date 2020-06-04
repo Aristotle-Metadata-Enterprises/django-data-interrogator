@@ -23,7 +23,7 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-INTERROGATOR_NAME_OVERRIDES = {'shop:Product': 'Productsssssssssssssssssssss'}
+INTERROGATOR_NAME_OVERRIDES = {'shop:Product': 'Products'}
 
 # Application definition
 
