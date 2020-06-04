@@ -1,1 +1,0 @@
-The documentation here is available in a browsable form at http://django-spaghetti-and-meatballs.rtfd.org/
