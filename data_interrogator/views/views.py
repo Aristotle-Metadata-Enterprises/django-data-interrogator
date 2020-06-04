@@ -274,11 +274,11 @@ class InterrogationAutocompleteUrls:
             'report_models': self.report_models,
             'allowed': self.allowed,
             'excluded': self.excluded,
+            'test_func': self.test_func
         }
 
         return [
-            path('', view=self.interrogator_view_class.as_view(template_name=self.template_name,
-                                                               test_func=self.test_func, **kwargs),
+            path('', view=self.interrogator_view_class.as_view(template_name=self.template_name, **kwargs),
                  name='interrogator'),
             path('ac', view=self.interrogator_autocomplete_class.as_view(**kwargs), name='autocomplete'),
         ]

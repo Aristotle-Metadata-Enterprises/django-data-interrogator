@@ -73,15 +73,15 @@ def normalise_math(expression):
     return expr
 
 
-def clean_filter(text) -> Union[str, Tuple[Any, str, Any]]:
+def clean_filter(text) -> Union[str, Tuple[str, str, str]]:
     """Return the (cleaned) filter for replacement"""
-    maps = [('<=', 'lte'), ('<', 'lt'), ('>=', 'gte'), ('>', 'gt'), ('<>', 'ne'), ('=', '')]
-    for a, b in maps:
-        candidate = text.split(a)
+    maps = [('<>', 'ne'), ('<=', 'lte'), ('<', 'lt'), ('>=', 'gte'), ('>', 'gt'), ('=', '')]
+    for interrogator_filter, django_filter in maps:
+        candidate = text.split(interrogator_filter)
         if len(candidate) == 2:
-            if a is "=":
-                return candidate[0], b, candidate[1]
-            return candidate[0], '__%s' % b, candidate[1]
+            if interrogator_filter is "=":
+                return candidate[0], django_filter, candidate[1]
+            return candidate[0], '__%s' % django_filter, candidate[1]
     return text
 
 
