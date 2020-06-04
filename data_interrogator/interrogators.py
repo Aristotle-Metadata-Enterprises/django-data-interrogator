@@ -73,7 +73,7 @@ def normalise_math(expression):
     return expr
 
 
-def clean_filter(text) -> Union[str, Tuple[str, str, str]]:
+def clean_filter(text: str) -> Union[str, Tuple[str, str, str]]:
     """Return the (cleaned) filter for replacement"""
     maps = [('<>', 'ne'), ('<=', 'lte'), ('<', 'lt'), ('>=', 'gte'), ('>', 'gt'), ('=', '')]
     for interrogator_filter, django_filter in maps:
