@@ -18,7 +18,7 @@ Add the *Data Interrogator* to your ``INSTALLED_APPS``::
 Quickstart
 ----------
 
-#. Make a list of base_models (models you wish to interrogate) and enter models into *witness protection* (models you want to disallow access to)::
+#. Make a list of base_models (models you wish to interrogate) and enter models into *witness protection* (models you want to disallow access to):
 .. code-block:: python
     DATA_INTERROGATION_DOSSIER = {
         'base_models': [
@@ -30,7 +30,7 @@ Quickstart
 
    Notes: ``base_models`` are used to query the django ``ContentType`` database. The values in ``excluded_models`` are matched against columns that might be returned, and any columns that match will be dropped from output.
 
-#. Make a view to capture form requests and pass the request off to the *interrogator*::
+#. Make a view to capture form requests and pass the request off to the *interrogator*:
 .. code-block:: python
     def custom_table(request):
         return interrogation_room(request, template='your/interrogation/template.html')
@@ -49,7 +49,7 @@ Extra dossier configuration
 
 The *Interrogation dossier* is a powerful way of altering how data is output. Along with specifying a model that can be a base_model, you can specify ``wrapsheets`` for them - i.e. special ways of displaying columns.
 
-Below is an example dossier for a single model, with a wrapsheet for the column ``foo`` on the model ``YourModel``::
+Below is an example dossier for a single model, with a wrapsheet for the column ``foo`` on the model ``YourModel``:
 .. code-block:: python
     DATA_INTERROGATION_DOSSIER = {
         'base_models': [
@@ -68,7 +68,7 @@ The ``columns`` value in the ``custom_cell_display`` specified additional column
 Bootstrap your way to a nicer interrogation room
 ------------------------------------------------
 
-*Data Interrogator* integrates nicely with `Bootstrap <http://getbootstrap.com>`_ and by default adds a ``table`` class `to use Bootstrap's built in styling for tables <http://getbootstrap.com/css/#tables>`_. If you want to do additional customisation of the "interrogation room" table, just override the ``data_interrogator/table_display.html`` template. For example to convert the interrogation room table into one that is responsive and has table striping, just change the template to that below::
+*Data Interrogator* integrates nicely with `Bootstrap <http://getbootstrap.com>`_ and by default adds a ``table`` class `to use Bootstrap's built in styling for tables <http://getbootstrap.com/css/#tables>`_. If you want to do additional customisation of the "interrogation room" table, just override the ``data_interrogator/table_display.html`` template. For example to convert the interrogation room table into one that is responsive and has table striping, just change the template to that below:
 .. code-block:: python
     <table class="table table-responsive table-striped">
         <thead>
@@ -112,7 +112,7 @@ Bootstrap-Table and Data Interrogator work well together, and just require loadi
 How to interrogate your data
 ----------------------------
 
-If we assume that we have an app with a model for Police Officers with the following models::
+If we assume that we have an app with a model for Police Officers with the following models:
 .. code-block:: python
     class PoliceOfficer:
         name = CharField(max_length=150)
