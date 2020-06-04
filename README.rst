@@ -1,6 +1,6 @@
 django-data-interrogator
 ========================
-
+.. highlight:: python 
 ``django-data-interrogator`` is a plug in table builder that allows users to easily interrogate information from a django database. In essence it provides a smart and sane frontend for building tabular data from the django database queryset API - specifically ``values``, ``filter``, ``order_by`` and a handful of annotations.
 
 .. contents::
