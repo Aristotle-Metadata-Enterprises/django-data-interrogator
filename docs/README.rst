@@ -31,12 +31,12 @@ Quickstart
    Notes: ``base_models`` are used to query the django ``ContentType`` database. The values in ``excluded_models`` are matched against columns that might be returned, and any columns that match will be dropped from output.
 
 #. Make a view to capture form requests and pass the request off to the *interrogator*::
-    .. code-block:: python
+.. code-block:: python
     def custom_table(request):
         return interrogation_room(request, template='your/interrogation/template.html')
 
 #. Make sure your template can handle the interrogation procedures::
-    .. code-block:: django
+.. code-block:: django
     {% load data_interrogator %}
 
     {% lineup %} {# loads the form for selecting columns #}
