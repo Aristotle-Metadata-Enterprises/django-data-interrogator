@@ -8,7 +8,7 @@ django-data-interrogator
 Installing
 ----------
 
-Add the *Data Interrogator* to your ``INSTALLED_APPS``::
+Add the *Data Interrogator* to your ``INSTALLED_APPS``:
 .. code-block:: python
    INSTALLED_APPS = (
      #...
@@ -35,7 +35,7 @@ Quickstart
     def custom_table(request):
         return interrogation_room(request, template='your/interrogation/template.html')
 
-#. Make sure your template can handle the interrogation procedures::
+#. Make sure your template can handle the interrogation procedures:
 .. code-block:: django
     {% load data_interrogator %}
 
@@ -97,7 +97,7 @@ Adding Bootstrap-Table for even more powerful investigations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 `Bootstrap-Table <https://github.com/wenzhixin/bootstrap-table>`_ is a powerful front-end table manipulation plug-in for Bootstrap that providings additional filtering, sorting and searching within html tables. `It also has an export extension <http://bootstrap-table.wenzhixin.net.cn/extensions/#table-export>`_ that allows users to download data from the table in a variety of formats including XML, JSON, CSV and Excel spreedsheets. 
 
-Bootstrap-Table and Data Interrogator work well together, and just require loading  the correct javascript libraries for Bootstrap-Table, and altering the ``data_interrogator/table_display.html`` template to add the right data attributes for driving the javascript, for example::
+Bootstrap-Table and Data Interrogator work well together, and just require loading  the correct javascript libraries for Bootstrap-Table, and altering the ``data_interrogator/table_display.html`` template to add the right data attributes for driving the javascript, for example:
 .. code-block:: html
     <table class="table" data-toggle="table"
            data-toolbar="#toolbar"
