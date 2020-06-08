@@ -8,11 +8,12 @@ django-data-interrogator
 Installing
 ----------
 
-Add the *Data Interrogator* to your ``INSTALLED_APPS``:
+Add the *Data Interrogator* to your ``INSTALLED_APPS``:\
 
 .. code-block:: python
+
    INSTALLED_APPS = (
-     #...
+     # ...
      'data_interrogator',
    )
 
@@ -21,7 +22,8 @@ Quickstart
 
 #. Make a list of base_models (models you wish to interrogate) and enter models into *witness protection* (models you want to disallow access to):
 
-.. code-block:: python
+.. code-block:: python 
+
     DATA_INTERROGATION_DOSSIER = {
         'base_models': [
             {'model':("yourapplabel","YourModelName")},
@@ -30,23 +32,25 @@ Quickstart
         'excluded_models' : ["User","Revision","Version"]
     }
 
-   Notes: ``base_models`` are used to query the django ``ContentType`` database. The values in ``excluded_models`` are matched against columns that might be returned, and any columns that match will be dropped from output.
+Notes: ``base_models`` are used to query the django ``ContentType`` database. The values in ``excluded_models`` are matched against columns that might be returned, and any columns that match will be dropped from output.
 
-#. Make a view to capture form requests and pass the request off to the *interrogator*:
+1. Make a view to capture form requests and pass the request off to the *interrogator*:
 
-.. code-block:: python
+.. code-block:: python 
+
     def custom_table(request):
         return interrogation_room(request, template='your/interrogation/template.html')
 
-#. Make sure your template can handle the interrogation procedures:
+2. Make sure your template can handle the interrogation procedures::
 
 .. code-block:: django
+
     {% load data_interrogator %}
 
     {% lineup %} {# loads the form for selecting columns #}
     {% interrogation_room %} {# loads the table where data is displayed #}
     
-#. Thats it!
+3. Thats it!
 
 Extra dossier configuration
 ---------------------------
@@ -56,6 +60,7 @@ The *Interrogation dossier* is a powerful way of altering how data is output. Al
 Below is an example dossier for a single model, with a wrapsheet for the column ``foo`` on the model ``YourModel``:
 
 .. code-block:: python
+
     DATA_INTERROGATION_DOSSIER = {
         'base_models': [
           { "model":("yourappname","YourModel"),
@@ -75,7 +80,8 @@ Bootstrap your way to a nicer interrogation room
 
 *Data Interrogator* integrates nicely with `Bootstrap <http://getbootstrap.com>`_ and by default adds a ``table`` class `to use Bootstrap's built in styling for tables <http://getbootstrap.com/css/#tables>`_. If you want to do additional customisation of the "interrogation room" table, just override the ``data_interrogator/table_display.html`` template. For example to convert the interrogation room table into one that is responsive and has table striping, just change the template to that below:
 
-.. code-block:: python
+.. code-block:: django
+
     <table class="table table-responsive table-striped">
         <thead>
             <tr>
@@ -105,7 +111,8 @@ Adding Bootstrap-Table for even more powerful investigations
 
 Bootstrap-Table and Data Interrogator work well together, and just require loading  the correct javascript libraries for Bootstrap-Table, and altering the ``data_interrogator/table_display.html`` template to add the right data attributes for driving the javascript, for example:
 
-.. code-block:: html
+.. code-block:: django
+
     <table class="table" data-toggle="table"
            data-toolbar="#toolbar"
            data-search="true"
@@ -122,6 +129,7 @@ How to interrogate your data
 If we assume that we have an app with a model for Police Officers with the following models:
 
 .. code-block:: python
+
     class PoliceOfficer:
         name = CharField(max_length=150)
         rank = CharField(max_length=150)
