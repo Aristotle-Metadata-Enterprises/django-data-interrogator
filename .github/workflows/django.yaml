@@ -1,0 +1,46 @@
+name: Django Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  python_lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v2
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install flake8
+        run: pip install flake8
+      - name: Lint
+        run: flake8
+
+  run_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/setup-python@v2
+
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install pip
+        run: pip install -U setuptools pip
+
+      - name: Install django
+        run: |
+          pip install -q Django=3.0
+
+      - name: Run tests
+        run: |
+          ./launch_app test
