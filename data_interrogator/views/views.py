@@ -1,6 +1,6 @@
 import json
 import string
-from typing import Tuple, Union, Any, Callable
+from typing import Tuple, Any, Callable, Dict, List
 
 from django import http
 from django.http import HttpResponse, JsonResponse
@@ -138,12 +138,12 @@ class ApiInterrogationView(InterrogationView):
         return JsonResponse(data)
 
 
-class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin):
-    """Build list of interrogation suggestions"""
+class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationMixin):
+    """Return list of possible selectable fields at a particular point in the data interrogator selection"""
 
     def get_allowed_fields(self) -> None:
         """Override allowed fields because permission checking on them is performed separately"""
-        pass
+        return None
 
     def blank_response(self) -> HttpResponse:
         """Return an empty response"""
@@ -152,8 +152,8 @@ class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin
             content_type='application/json',
         )
 
-    def split_query(self, query) -> Tuple[Union[str, Any], Any]:
-        """Split a query-string into a list of query strings that can be evaluated individually"""
+    def split_query(self, query) -> Tuple[str, Any]:
+        """Split a query-string into a tuple of split query strings that can be evaluated individually"""
 
         # Only accept the last field in the case of trying to type a calculation. eg. end_date - start_date
         prefix = ""
@@ -171,8 +171,8 @@ class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin
 
         return prefix, query.split('.')
 
-    def build_related_model_help_text(self, text, field) -> str:
-        """Generate help text for the fields from a related model"""
+    def get_related_model_help_text(self, text, field) -> str:
+        """Generate help text for a field that comes from a related model"""
         if not text:
             help_text = f"Related model - {field.related_model._meta.get_verbose_name}"
         else:
@@ -183,68 +183,98 @@ class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin
 
         return help_text
 
+    def is_field_excluded(self, model, field, interrogator) -> bool:
+        """Return if the field is excluded from interrogation"""
+        return (
+            interrogator.is_excluded_field(model, normalise_field(field.name)) or
+            interrogator.is_hidden_field(field)
+        )
+
+    def is_model_excluded(self, field, interrogator) -> bool:
+        """Return if the model is excluded from interrogation"""
+        return field.related_model and interrogator.is_excluded_model(field.related_model)
+
+    def get_field_help(self, field) -> str:
+        """Return help text for a particular field """
+        if field.is_relation:
+            return self.get_related_model_help_text(field.related_model.__doc__, field)
+        else:
+            return str(field.help_text)
+
+    def get_field_datatype(self, field) -> str:
+        """Return the datatype for a particular field"""
+        if hasattr(field, 'get_internal_type'):
+            return field.get_internal_type()
+        else:
+            return "Many to many relationship"
+
+    def get_field_value(self, field_name, prefix) -> str:
+        """Get the value for a particular field"""
+        return prefix + field_name
+
+    def get_field_data(self, field, field_name, prefix, args) -> Dict[str, str]:
+        """Return associated metadata for a particular field"""
+
+        data = {
+            'value': self.get_field_value(field_name, prefix),
+            'field_name': field.name,
+            'lookup': args[-1],
+            'name': field_name,
+            'is_relation': field.is_relation,
+            'help': self.get_field_help(field),
+            'datatype': self.get_field_datatype(field),
+        }
+
+        return data
+
+    def get_field_suggestions(self, fields, model, interrogator, prefix, args) -> List[Dict]:
+        """Return the field suggestions for a model"""
+        autocompletes = []
+
+        for field in fields:
+            field_is_excluded = (
+                    self.is_field_excluded(model, field, interrogator) or self.is_model_excluded(field, interrogator)
+            )
+            if field_is_excluded:
+                # Don't include excluded fields in the autocomplete
+                continue
+
+            field_name = '.'.join(args[:-1] + [field.name])
+            field_data = self.get_field_data(field, field_name, prefix, args)
+
+            autocompletes.append(field_data)
+
+        return autocompletes
+
     def get(self, request):
         interrogator = self.get_interrogator()
         model_name = request.GET.get('model', "")
         query = request.GET.get('q', "")
 
-        # If we haven't been provided a model
         if not model_name:
+            # If we haven't got a model
             return self.blank_response()
-
         try:
             model, _ = interrogator.validate_report_model(model_name)
         except:
-            # Or the model name is invalid
+            # Or we can't validate the model
             return self.blank_response()
 
         prefix, args = self.split_query(query)
 
-        if len(args) > 1:
-            # Jump across the dots to iteratively determine the 2nd to last field, which is the model
+        # If args > 1, then we are not querying the base model
+        not_base_model = len(args) > 1
+
+        if not_base_model:
+            # Find the appropriate model by iterating across the query
             for arg in args[:-1]:
                 model = [field for field in model._meta.get_fields() if field.name == arg][0].related_model
 
-        fields = [f for f in model._meta.get_fields() if args[-1].lower() in f.name]
-
-        # Build list of allowed suggestions
-        suggestions = []
-        for field in fields:
-            excluded_field = (
-                interrogator.is_excluded_field(model, normalise_field(field.name)) or
-                interrogator.is_hidden_field(field)
-            )
-            excluded_model = field.related_model and interrogator.is_excluded_model(field.related_model)
-            if excluded_field or excluded_model:
-                # If it's an excluded field or an excluded model, don't include it as suggestion
-                continue
-
-            field_name = '.'.join(args[:-1] + [field.name])
-
-            if field.is_relation:
-                help_text = self.build_related_model_help_text(field.related_model.__doc__, field)
-            else:
-                help_text = str(field.help_text)
-            is_relation = field.is_relation
-
-            if hasattr(field, 'get_internal_type'):
-                datatype = field.get_internal_type()
-            else:
-                datatype = "Many to many relationship"
-
-            data = {
-                'value': prefix + field_name,
-                'field_name': field.name,
-                'lookup': args[-1],
-                'name': field_name,
-                'is_relation': is_relation,
-                'help': help_text,
-                'datatype': str(datatype),
-            }
-            suggestions.append(data)
+        fields = [field for field in model._meta.get_fields() if args[-1].lower() in field.name]
+        autocompletes = self.get_field_suggestions(fields, model, interrogator, prefix, args)
 
         return http.HttpResponse(
-            json.dumps(suggestions),
+            json.dumps(autocompletes),
             content_type='application/json',
         )
 
@@ -255,7 +285,7 @@ class InterrogationAutocompleteUrls:
     """
 
     interrogator_view_class = InterrogationView
-    interrogator_autocomplete_class = InterrogationAutoComplete
+    interrogator_autocomplete_class = InterrogationAutoCompleteView
 
     def __init__(self, *args, **kwargs):
         self.report_models = kwargs.get('report_models', self.interrogator_view_class.report_models)

@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 from data_interrogator.admin.forms import AdminInvestigationForm, AdminPivotTableForm
 from data_interrogator.interrogators import Allowable
 from data_interrogator.views import InterrogationView, InterrogationAutocompleteUrls, PivotTableView, \
-    InterrogationAutoComplete
+    InterrogationAutoCompleteView
 
 
 class AdminInterrogationRoom(InterrogationView):
@@ -22,7 +22,7 @@ class AdminInterrogationRoom(InterrogationView):
 
 class AdminInterrogationAutocompleteUrls(InterrogationAutocompleteUrls):
     interrogator_view_class = AdminInterrogationRoom
-    interrogator_autocomplete_class = InterrogationAutoComplete
+    interrogator_autocomplete_class = InterrogationAutoCompleteView
 
 
 class AdminPivotTableView(PivotTableView):

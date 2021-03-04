@@ -2,6 +2,6 @@
 # from .pivot import PivotTable, AdminPivotTable, pivot_table
 # from . import lookups
 
-from .views import InterrogationView, InterrogationAutocompleteUrls, InterrogationAutoComplete
+from .views import InterrogationView, InterrogationAutocompleteUrls, InterrogationAutoCompleteView
 from .pivot import PivotTableView
 from . import lookups
