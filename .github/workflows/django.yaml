@@ -44,4 +44,5 @@ jobs:
 
       - name: Run tests
         run: |
-          pwd
+          cd app
+          DJANGO_SETTINGS_MODULE=app.settings django-admin test
