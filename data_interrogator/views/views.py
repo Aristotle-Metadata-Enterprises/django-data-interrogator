@@ -251,10 +251,7 @@ class InterrogationAutoComplete(UserHasPermissionMixin, View, InterrogationMixin
 
 class InterrogationAutocompleteUrls:
     """
-    Generates:
-        A list of URLs for an url configuration for:
-            - The main interrogator view
-            - An autocomplete url
+    Use these urls if you want to use the data interrogator via django templates
     """
 
     interrogator_view_class = InterrogationView
@@ -286,10 +283,7 @@ class InterrogationAutocompleteUrls:
 
 class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
     """
-    Generates:
-        A list of URLs for an url configuration for:
-            - The main interrogator view (.. as an API)
-            - An autocomplete url
+    Use these urls if you want to use the data interrogator via an API
     """
     interrogator_view_class = ApiInterrogationView
     interrogator_base_model_options_class = BaseModelOptionsApi
