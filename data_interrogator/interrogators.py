@@ -1,10 +1,11 @@
 import re
 from datetime import timedelta
 from enum import Enum
-from typing import Union, Tuple, Any, List
+from typing import Union, Tuple, List
 
 from django.apps import apps
 from django.core import exceptions
+from django.conf import settings
 from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, Model
 from django.db.models import functions as func
 
@@ -118,7 +119,6 @@ class Interrogator:
     allowed = Allowable.ALL_MODELS
     excluded = []
 
-
     def __init__(self, report_models=None, allowed=None, excluded=None):
         if report_models is not None:
             self.report_models = report_models
@@ -153,8 +153,10 @@ class Interrogator:
         else:
             self.allowed_models = Allowable.ALL_MODELS
 
-    def is_hidden_field(self, field):
+    def is_hidden_field(self, field) -> bool:
         """Returns whether a field begins with an underscore and so is hidden"""
+        if hasattr(settings, 'INTERROGATOR_INCLUDED_HIDDEN_FIELDS') and field in settings.INTERROGATOR_INCLUDED_HIDDEN_FIELDS:
+            return False
         return field.name.startswith('_')
 
     def get_model_queryset(self):
