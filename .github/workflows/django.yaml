@@ -44,5 +44,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd app
+          ls
           DJANGO_SETTINGS_MODULE=app.settings django-admin test
