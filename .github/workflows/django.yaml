@@ -44,4 +44,4 @@ jobs:
 
       - name: Run tests
         run: |
-          ./launch_app test
+          PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
