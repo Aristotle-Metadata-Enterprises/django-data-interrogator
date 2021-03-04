@@ -24,6 +24,7 @@ jobs:
         run: flake8
 
   run_tests:
+    name: Run Django tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -39,7 +40,7 @@ jobs:
 
       - name: Install django
         run: |
-          pip install -q Django=3.0
+          pip install -q Django==3.0
 
       - name: Run tests
         run: |
