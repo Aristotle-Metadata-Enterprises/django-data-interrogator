@@ -41,6 +41,7 @@ jobs:
       - name: Install django
         run: |
           pip install -q Django==3.0
+          echo $(ls)
           pip install .
 
       - name: Run tests
