@@ -9,31 +9,38 @@ from data_interrogator.interrogators import Interrogator, Allowable
 
 
 class TestInterrogatorPages(TestCase):
-    fixtures = ['data.json',]
-    
+    """NB: these tests use the url configuration specified by the shop display app"""
+    fixtures = ['data.json']
+
     def test_page_room(self):
+        """Test that the interrogator page for sales people returns the correct results"""
+
         response = self.client.get(
-            "/data/?lead_base_model=shop%3Asalesperson&"
-            "filter_by=&filter_by=&"
-            "columns="
+            '/full_report/?lead_base_model=shop%3Asalesperson'
+            '&filter_by='
+            '&columns='
             "name||"
             "sum%28sale.sale_price+-+sale.product.cost_price%29||"
-            "count%28sale%29&sort_by="
+            '&sort_by=&action='
         )
+
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
+
         SalesPerson = apps.get_model('shop', 'SalesPerson')
-        q = SalesPerson.objects.order_by('name').values("name").annotate(
+
+        # Assert that the sales people are appearing in the data interrogator view
+        salespeople = SalesPerson.objects.order_by('name').values("name").annotate(
             total=Sum(
                 ExpressionWrapper(
                     F('sale__sale_price') - F('sale__product__cost_price'),
                     output_field=FloatField(),
                 ), 
                 distinct=False),
-            sales=Count('sale'),
         )
-        for row in q:
-            self.assertTrue('| {name} | {total} | {sales} |'.format(**row) in page)
+        for row in salespeople:
+            self.assertTrue(str(row['name']) in page)
+            self.assertTrue(str(row['total']) in page)
 
     def test_page_sumif(self):
         response = self.client.get("/data/?lead_base_model=shop%3Aproduct&filter_by=&columns=name||sale.seller.name||sumif(sale.sale_price%2C+sale.state.iexact%3DNSW)||sumif(sale.sale_price%2C+sale.state.iexact%3DVIC)")
@@ -51,7 +58,7 @@ class TestInterrogatorPages(TestCase):
         )
 
         for row in q:
-            self.assertTrue('| {name} | {sale__seller__name} | {nsw_sales} | {vic_sales} |'.format(**row) in page)
+            self.assertTrue('{name} | {sale__seller__name} | {nsw_sales} | {vic_sales} |'.format(**row) in page)
 
     def test_page_pivot(self):
         # TODO
