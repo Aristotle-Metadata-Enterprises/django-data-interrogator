@@ -188,11 +188,10 @@ class Interrogator:
 
         if app_label in self.excluded or (app_label, model_name) in self.excluded:
             return True
-        else:
-            if self.allowed == Allowable.ALL_MODELS:
-                return False
-            else:
-                return app_label in self.allowed or (app_label, model_name) in self.allowed
+
+        if self.allowed == Allowable.ALL_MODELS:
+            return False
+        return app_label in self.allowed or (app_label, model_name) in self.allowed
 
     def has_forbidden_join(self, column, base_model=None) -> bool:
         """Return whether a forbidden join exists in the query"""
