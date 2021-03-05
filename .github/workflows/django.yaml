@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
-        uses: actions/setup-python@v2
+        uses: actions/checkout@v2
 
       - name: Setup Python 3.8
         uses: actions/setup-python@v2
@@ -40,8 +40,7 @@ jobs:
 
       - name: Install django
         run: |
-          pip install -q Django==3.0
-          pip install .
+          pwd
 
       - name: Run tests
         run: PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
