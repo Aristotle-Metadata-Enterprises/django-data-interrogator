@@ -22,7 +22,7 @@ jobs:
         run: pip install flake8
       - name: Lint
         run: flake8
-    continue-on-error: true
+        continue-on-error: true
 
   run_tests:
     name: Run Django tests
