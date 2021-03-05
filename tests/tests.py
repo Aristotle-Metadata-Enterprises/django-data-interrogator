@@ -43,10 +43,19 @@ class TestInterrogatorPages(TestCase):
             self.assertTrue(str(row['total']) in page)
 
     def test_page_sumif(self):
-        response = self.client.get("/data/?lead_base_model=shop%3Aproduct&filter_by=&columns=name||sale.seller.name||sumif(sale.sale_price%2C+sale.state.iexact%3DNSW)||sumif(sale.sale_price%2C+sale.state.iexact%3DVIC)")
+        """Test that the data interrogators sum if works"""
+
+        response = self.client.get(
+            "/full_report/?lead_base_model=shop%3Aproduct&filter_by=&columns=name"
+            "||sale.seller.name"
+            "||sumif(sale.sale_price%2C+sale.state.iexact%3DNSW)"
+            "||sumif(sale.sale_price%2C+sale.state.iexact%3DVIC)"
+        )
+
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
 
+        # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
         Product = apps.get_model('shop', 'Product')
         q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
             vic_sales=Sum(
@@ -58,11 +67,9 @@ class TestInterrogatorPages(TestCase):
         )
 
         for row in q:
-            self.assertTrue('{name} | {sale__seller__name} | {nsw_sales} | {vic_sales} |'.format(**row) in page)
-
-    def test_page_pivot(self):
-        # TODO
-        pass
+            self.assertTrue(str(row['name'] in page))
+            self.assertTrue(str(row['vic_sales']) in page)
+            self.assertTrue(str(row['nsw_sales']) in page)
 
 
 class TestInterrogators(TestCase):
@@ -95,19 +102,6 @@ class TestInterrogators(TestCase):
         )
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
-
-    def test_cannot_start_from_forbidden_model(self):
-        report = Interrogator(
-            report_models=[('shop','SalesPerson'),],
-            allowed=Allowable.ALL_MODELS,
-            excluded=[]
-        )
-        with self.assertRaises(exceptions.ModelNotAllowedException):
-            results = report.interrogate(
-                base_model='shop:Product',
-                columns=['name'],
-                filters=[]
-            )
 
     def test_cannot_join_forbidden_model(self):
         SalesPerson = apps.get_model('shop', 'SalesPerson')

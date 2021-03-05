@@ -43,6 +43,7 @@ urlpatterns = [
     path(r'full_report/', include(views.InterrogationAutocompleteUrls(
         report_models=Allowable.ALL_MODELS,
         allowed=Allowable.ALL_MODELS,
+        excluded=[],
         template_name="typeahead.html",
         test_func=allow_all_users
     ).urls)),
