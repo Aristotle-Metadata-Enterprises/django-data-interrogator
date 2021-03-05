@@ -40,7 +40,8 @@ jobs:
 
       - name: Install django
         run: |
-          pwd
+          pip install -q Django==3.0
+          pip install .
 
       - name: Run tests
         run: PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
