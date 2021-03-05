@@ -43,7 +43,6 @@ jobs:
         run: |
           pip install -q Django==3.0
           pip install .
-        working-directory: ./
 
       - name: Run tests
         run: |
