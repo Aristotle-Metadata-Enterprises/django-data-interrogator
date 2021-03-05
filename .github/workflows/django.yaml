@@ -36,13 +36,14 @@ jobs:
           python-version: 3.8
 
       - name: Install pip
-        run: pip install -U setuptools pip
+        run: |
+        pip install -U setuptools pip
 
       - name: Install django
         run: |
           pip install -q Django==3.0
-          echo $(ls)
           pip install .
+        working-directory: ./
 
       - name: Run tests
         run: |
