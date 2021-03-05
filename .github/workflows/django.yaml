@@ -36,8 +36,7 @@ jobs:
           python-version: 3.8
 
       - name: Install pip
-        run: |
-        pip install -U setuptools pip
+        run: pip install -U setuptools pip
 
       - name: Install django
         run: |
@@ -45,5 +44,4 @@ jobs:
           pip install .
 
       - name: Run tests
-        run: |
-          PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
+        run: PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
