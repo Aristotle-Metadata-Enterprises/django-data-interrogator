@@ -1,14 +1,11 @@
-from django.urls import reverse
+from django.apps import apps
+from django.db.models import Case, Sum, When, F, FloatField, ExpressionWrapper
+from django.db.models import Count
 from django.test import TestCase
-from django.test.utils import setup_test_environment
 from django.utils.encoding import smart_text
 
-
-from django.db.models import F, Count, Min, Max, Sum, Value, Avg
-from data_interrogator.interrogators import Interrogator, Allowable
-from django.apps import apps
-from django.db.models import Case, Lookup, Sum, Transform, Q, When, F, FloatField, ExpressionWrapper
 from data_interrogator import exceptions
+from data_interrogator.interrogators import Interrogator, Allowable
 
 
 class TestInterrogatorPages(TestCase):
