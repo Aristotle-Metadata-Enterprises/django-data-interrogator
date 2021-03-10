@@ -250,6 +250,11 @@ class Interrogator:
         base_model = apps.get_model(app_label.lower(), model.lower())
 
         extra_data = {}
+
+        if (app_label, model) in self.excluded or base_model in self.excluded:
+            self.base_model = None
+            raise di_exceptions.ModelNotAllowedException()
+
         if self.report_models == Allowable.ALL_MODELS:
             return base_model, extra_data
 
@@ -477,6 +482,7 @@ class Interrogator:
             else:
                 errors.append("An error was found with your query:\n%s" % e)
         except Exception as e:
+            import pdb; pdb.set_trace()
             rows = []
             errors.append("Something went wrong - %s" % e)
 

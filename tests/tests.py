@@ -146,6 +146,22 @@ class TestInterrogators(TestCase):
             'Joining tables with the column [seller__name] is forbidden, this column is removed from the output.'
         )
 
+    def test_cannot_start_from_forbbiden_model(self):
+        """Test that a forbidden model cannot be the base model in the interrogator"""
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+
+        report = Interrogator(
+            report_models=[('shop', 'Sale')],
+            allowed=Allowable.ALL_MODELS,
+            excluded=[('shop', 'SalesPerson')]
+        )
+
+        results = report.interrogate(
+            base_model='shop:SalesPerson',
+            columns=['seller__name'],
+            filters=[]
+        )
+
     def test_interrogator(self):
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
