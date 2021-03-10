@@ -79,7 +79,6 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
     def get(self, request):
         data = {}
         form = self.get_form()
-
         has_valid_columns = any([True for c in request.GET.getlist('columns', []) if c != ''])
         if has_valid_columns:
             # Create a form instance and populate it with data from the request:

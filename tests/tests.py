@@ -3,8 +3,7 @@ from django.db.models import Case, Sum, When, F, FloatField, ExpressionWrapper
 from django.db.models import Count
 from django.test import TestCase
 from django.utils.encoding import smart_text
-
-from data_interrogator import exceptions
+from django.utils.http import urlencode
 from data_interrogator.interrogators import Interrogator, Allowable
 
 
@@ -15,14 +14,15 @@ class TestInterrogatorPages(TestCase):
     def test_page_room(self):
         """Test that the interrogator page for sales people returns the correct results"""
 
-        response = self.client.get(
-            '/full_report/?lead_base_model=shop%3Asalesperson'
-            '&filter_by='
-            '&columns='
-            "name||"
-            "sum%28sale.sale_price+-+sale.product.cost_price%29||"
-            '&sort_by=&action='
-        )
+        params_dict = {
+            'lead_base_model': 'shop:salesperson',
+            'filter_by': '',
+            'columns': 'name||sum(sale.sale_price - sale.product.cost_price)||',
+            'sort_by': '',
+            'action': ''
+        }
+        url = '/full_report/?' + urlencode(params_dict)
+        response = self.client.get(url)
 
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
@@ -44,13 +44,16 @@ class TestInterrogatorPages(TestCase):
 
     def test_page_sumif(self):
         """Test that the data interrogators sum if works"""
-
-        response = self.client.get(
-            "/full_report/?lead_base_model=shop%3Aproduct&filter_by=&columns=name"
-            "||sale.seller.name"
-            "||sumif(sale.sale_price%2C+sale.state.iexact%3DNSW)"
-            "||sumif(sale.sale_price%2C+sale.state.iexact%3DVIC)"
-        )
+        params_dict = {
+            'lead_base_model': 'shop:product',
+            'filter_by': '',
+            'columns': 'name'
+                       '||sale.seller.name'
+                       '||sumif(sale.sale_price, sale.state.iexact=NSW)'
+                       '||sumif(sale.sale_price, sale.state.iexact=VIC)'
+        }
+        url = '/full_report/?' + urlencode(params_dict)
+        response = self.client.get(url)
 
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
