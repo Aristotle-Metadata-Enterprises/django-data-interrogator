@@ -1,4 +1,5 @@
 from django.apps import apps
+from decimal import Decimal
 from django.db.models import Case, Sum, When, F, FloatField, ExpressionWrapper
 from django.db.models import Count
 from django.test import TestCase
@@ -231,3 +232,16 @@ class TestInterrogators(TestCase):
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
         self.assertTrue(results['count'] == unique_names.filter(name__icontains='Wiffle').count())
+
+    def test_not_equal(self):
+        """Test not equal filter is working"""
+        Product = apps.get_model('shop', 'Product')
+
+        excluded = Product.objects.create(name="EXCLUDED", category=Product.WOMEN, cost_price=Decimal('10.00'))
+        Product.objects.create(name="INCLUDED_1", category=Product.WOMEN, cost_price=Decimal('3.00'))
+        Product.objects.create(name="INCLUDED_2", category=Product.WOMEN, cost_price=Decimal('25.00'))
+
+        self.assertNotIn(
+            excluded,
+            Product.objects.filter(name__ne="EXCLUDED").order_by('name')
+        )
