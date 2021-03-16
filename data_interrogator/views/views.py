@@ -3,6 +3,7 @@ import string
 from typing import Tuple, Any, Callable, Dict, List
 
 from django import http
+from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
@@ -40,6 +41,7 @@ class UserHasPermissionMixin(UserPassesTestMixin):
     def get_test_func(self) -> Callable:
         if self.test_func is None:
             self.test_func = 'is_superuser'
+
         if type(self.test_func) == str:
             return getattr(self, self.test_func)
         else:
@@ -48,6 +50,13 @@ class UserHasPermissionMixin(UserPassesTestMixin):
     def is_superuser(self) -> bool:
         """A sensible default test_func that is superuser_only if one is not passed through during creation"""
         return self.request.user.is_superuser
+
+    def user_has_property(self) -> bool:
+        """Returns if user has a particular property"""
+        if user_permission := getattr(settings, 'INTERROGATOR_USER_PERMISSION_NAME', None):
+            return self.request.user.is_authenticated and getattr(self.request.user, user_permission, None)
+
+        return False
 
 
 class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
