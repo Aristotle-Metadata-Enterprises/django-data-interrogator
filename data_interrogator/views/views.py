@@ -234,6 +234,7 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
             field_is_excluded = (
                     self.is_field_excluded(model, field, interrogator) or self.is_model_excluded(field, interrogator)
             )
+
             if field_is_excluded:
                 # Don't include excluded fields in the autocomplete
                 continue
@@ -242,7 +243,6 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
             field_data = self.get_field_data(field, field_name, prefix, args)
 
             autocompletes.append(field_data)
-
         return autocompletes
 
     def get(self, request):

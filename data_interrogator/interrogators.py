@@ -150,8 +150,9 @@ class Interrogator:
 
     def is_hidden_field(self, field) -> bool:
         """Returns whether a field begins with an underscore and so is hidden"""
-        if hasattr(settings, 'INTERROGATOR_INCLUDED_HIDDEN_FIELDS') and field in settings.INTERROGATOR_INCLUDED_HIDDEN_FIELDS:
+        if hasattr(settings, 'INTERROGATOR_INCLUDED_HIDDEN_FIELDS') and field.name in settings.INTERROGATOR_INCLUDED_HIDDEN_FIELDS:
             return False
+
         return field.name.startswith('_')
 
     def get_model_queryset(self):
@@ -182,16 +183,23 @@ class Interrogator:
         """
         return False
 
-    def is_excluded_model(self, model_class):
+    def is_excluded_model(self, model_class) -> bool:
+        """Returns whether a model should be excluded"""
         app_label = model_class._meta.app_label
         model_name = model_class._meta.model_name
+
+        # Special case to include content type
+        if model_name == 'contenttype':
+            return False
 
         if app_label in self.excluded or (app_label, model_name) in self.excluded:
             return True
 
         if self.allowed == Allowable.ALL_MODELS:
             return False
-        return app_label in self.allowed or (app_label, model_name) in self.allowed
+
+        excluded = not (app_label in self.allowed or ((app_label, model_name) in self.allowed))
+        return excluded
 
     def has_forbidden_join(self, column, base_model=None) -> bool:
         """Return whether a forbidden join exists in the query"""
