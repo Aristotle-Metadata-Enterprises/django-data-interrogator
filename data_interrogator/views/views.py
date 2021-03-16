@@ -230,7 +230,6 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
         """Return the field suggestions for a model"""
         autocompletes = []
 
-        excluded_fields = []
         for field in fields:
             field_is_excluded = (
                     self.is_field_excluded(model, field, interrogator) or self.is_model_excluded(field, interrogator)
@@ -238,7 +237,6 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
 
             if field_is_excluded:
                 # Don't include excluded fields in the autocomplete
-                excluded_fields.append(field)
                 continue
 
             field_name = '.'.join(args[:-1] + [field.name])
