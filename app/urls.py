@@ -20,7 +20,6 @@ urlpatterns = [
     path(r'typeahead/', views.InterrogationView.as_view(template_name="typeahead.html")),
     path(r'admin/', include("data_interrogator.admin.urls")),
     path(r'admin/', admin.site.urls),
-    path(r'data/', include("data_interrogator.urls")),
     path(r'api/product_report/', include(InterrogationAPIAutocompleteUrls(
         report_models=[("shop", "Product")],
         allowed=[("shop")],
@@ -43,6 +42,7 @@ urlpatterns = [
     path(r'full_report/', include(views.InterrogationAutocompleteUrls(
         report_models=Allowable.ALL_MODELS,
         allowed=Allowable.ALL_MODELS,
+        excluded=[],
         template_name="typeahead.html",
         test_func=allow_all_users
     ).urls)),

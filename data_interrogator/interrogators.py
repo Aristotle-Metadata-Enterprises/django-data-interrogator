@@ -86,11 +86,6 @@ def clean_filter(text: str) -> Union[str, Tuple[str, str, str]]:
     return text
 
 
-# Because of the risk of data leakage from User, Revision and Version tables,
-# If a django user hasn't explicitly set up excluded models,
-# we will ban interrogators from inspecting the User table
-# as well as Revision and Version (which provide audit tracking and are available in django-revision)
-
 class Allowable(Enum):
     ALL_APPS = 1
     ALL_MODELS = 1
@@ -191,9 +186,12 @@ class Interrogator:
         app_label = model_class._meta.app_label
         model_name = model_class._meta.model_name
 
+        if app_label in self.excluded or (app_label, model_name) in self.excluded:
+            return True
+
         if self.allowed == Allowable.ALL_MODELS:
             return False
-        return app_label in self.excluded or (app_label, model_name) in self.excluded
+        return app_label in self.allowed or (app_label, model_name) in self.allowed
 
     def has_forbidden_join(self, column, base_model=None) -> bool:
         """Return whether a forbidden join exists in the query"""
@@ -252,6 +250,11 @@ class Interrogator:
         base_model = apps.get_model(app_label.lower(), model.lower())
 
         extra_data = {}
+
+        if (app_label, model) in self.excluded or base_model in self.excluded:
+            self.base_model = None
+            raise di_exceptions.ModelNotAllowedException(model=base_model)
+
         if self.report_models == Allowable.ALL_MODELS:
             return base_model, extra_data
 

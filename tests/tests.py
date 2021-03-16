@@ -1,48 +1,65 @@
-from django.urls import reverse
-from django.test import TestCase
-from django.test.utils import setup_test_environment
-from django.utils.encoding import smart_text
-
-
-from django.db.models import F, Count, Min, Max, Sum, Value, Avg
-from data_interrogator.interrogators import Interrogator, Allowable
 from django.apps import apps
-from django.db.models import Case, Lookup, Sum, Transform, Q, When, F, FloatField, ExpressionWrapper
-from data_interrogator import exceptions
+from decimal import Decimal
+from django.db.models import Case, Sum, When, F, FloatField, ExpressionWrapper
+from django.db.models import Count
+from django.test import TestCase
+from django.utils.encoding import smart_text
+from django.utils.http import urlencode
+from data_interrogator.interrogators import Interrogator, Allowable
 
 
 class TestInterrogatorPages(TestCase):
-    fixtures = ['data.json',]
-    
+    """NB: these tests use the url configuration specified by the shop display app"""
+    fixtures = ['data.json']
+
     def test_page_room(self):
-        response = self.client.get(
-            "/data/?lead_base_model=shop%3Asalesperson&"
-            "filter_by=&filter_by=&"
-            "columns="
-            "name||"
-            "sum%28sale.sale_price+-+sale.product.cost_price%29||"
-            "count%28sale%29&sort_by="
-        )
+        """Test that the interrogator page for sales people returns the correct results"""
+
+        params_dict = {
+            'lead_base_model': 'shop:salesperson',
+            'filter_by': '',
+            'columns': 'name||sum(sale.sale_price - sale.product.cost_price)||',
+            'sort_by': '',
+            'action': ''
+        }
+        url = '/full_report/?' + urlencode(params_dict)
+        response = self.client.get(url)
+
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
+
         SalesPerson = apps.get_model('shop', 'SalesPerson')
-        q = SalesPerson.objects.order_by('name').values("name").annotate(
+
+        # Assert that the sales people are appearing in the data interrogator view
+        salespeople = SalesPerson.objects.order_by('name').values("name").annotate(
             total=Sum(
                 ExpressionWrapper(
                     F('sale__sale_price') - F('sale__product__cost_price'),
                     output_field=FloatField(),
                 ), 
                 distinct=False),
-            sales=Count('sale'),
         )
-        for row in q:
-            self.assertTrue('| {name} | {total} | {sales} |'.format(**row) in page)
+        for row in salespeople:
+            self.assertTrue(str(row['name']) in page)
+            self.assertTrue(str(row['total']) in page)
 
     def test_page_sumif(self):
-        response = self.client.get("/data/?lead_base_model=shop%3Aproduct&filter_by=&columns=name||sale.seller.name||sumif(sale.sale_price%2C+sale.state.iexact%3DNSW)||sumif(sale.sale_price%2C+sale.state.iexact%3DVIC)")
+        """Test that the data interrogators sum if works"""
+        params_dict = {
+            'lead_base_model': 'shop:product',
+            'filter_by': '',
+            'columns': 'name'
+                       '||sale.seller.name'
+                       '||sumif(sale.sale_price, sale.state.iexact=NSW)'
+                       '||sumif(sale.sale_price, sale.state.iexact=VIC)'
+        }
+        url = '/full_report/?' + urlencode(params_dict)
+        response = self.client.get(url)
+
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
 
+        # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
         Product = apps.get_model('shop', 'Product')
         q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
             vic_sales=Sum(
@@ -54,11 +71,9 @@ class TestInterrogatorPages(TestCase):
         )
 
         for row in q:
-            self.assertTrue('| {name} | {sale__seller__name} | {nsw_sales} | {vic_sales} |'.format(**row) in page)
-
-    def test_page_pivot(self):
-        # TODO
-        pass
+            self.assertTrue(str(row['name'] in page))
+            self.assertTrue(str(row['vic_sales']) in page)
+            self.assertTrue(str(row['nsw_sales']) in page)
 
 
 class TestInterrogators(TestCase):
@@ -91,19 +106,6 @@ class TestInterrogators(TestCase):
         )
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
-
-    def test_cannot_start_from_forbidden_model(self):
-        report = Interrogator(
-            report_models=[('shop','SalesPerson'),],
-            allowed=Allowable.ALL_MODELS,
-            excluded=[]
-        )
-        with self.assertRaises(exceptions.ModelNotAllowedException):
-            results = report.interrogate(
-                base_model='shop:Product',
-                columns=['name'],
-                filters=[]
-            )
 
     def test_cannot_join_forbidden_model(self):
         SalesPerson = apps.get_model('shop', 'SalesPerson')
@@ -144,6 +146,24 @@ class TestInterrogators(TestCase):
             results['errors'][0],
             'Joining tables with the column [seller__name] is forbidden, this column is removed from the output.'
         )
+
+    def test_interrogator_cannot_start_from_forbidden_model(self):
+        """Test that a forbidden model cannot be the base model in the interrogator"""
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+
+        report = Interrogator(
+            report_models=[('shop', 'Sale')],
+            allowed=Allowable.ALL_MODELS,
+            excluded=[('shop', 'SalesPerson')]
+        )
+
+        results = report.interrogate(
+            base_model='shop:SalesPerson',
+            columns=['seller__name'],
+            filters=[]
+        )
+
+        self.assertIn('Something went wrong - ModelNotAllowedException', results['errors'][0])
 
     def test_interrogator(self):
         SalesPerson = apps.get_model('shop', 'SalesPerson')
@@ -212,3 +232,16 @@ class TestInterrogators(TestCase):
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
         self.assertTrue(results['count'] == unique_names.filter(name__icontains='Wiffle').count())
+
+    def test_not_equal(self):
+        """Test not equal filter is working"""
+        Product = apps.get_model('shop', 'Product')
+
+        excluded = Product.objects.create(name="EXCLUDED", category=Product.WOMEN, cost_price=Decimal('10.00'))
+        Product.objects.create(name="INCLUDED_1", category=Product.WOMEN, cost_price=Decimal('3.00'))
+        Product.objects.create(name="INCLUDED_2", category=Product.WOMEN, cost_price=Decimal('25.00'))
+
+        self.assertNotIn(
+            excluded,
+            Product.objects.filter(name__ne="EXCLUDED").order_by('name')
+        )

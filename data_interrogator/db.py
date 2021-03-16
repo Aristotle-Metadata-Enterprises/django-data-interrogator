@@ -39,10 +39,11 @@ class SumIf(Sum):
         super(SumIf, self).__init__(case)
 
 
-# SQLite function to force a date time subtraction to come out correctly.
-# This just returns the expression on every other database backend.
-
 class ForceDate(Func):
+    """
+    SQLite specific function to force a date time subtraction to come out correctly.
+    This just returns the expression on every other database backend
+    """
     function = ''
     template = "%(expressions)s"
     arity = 1
