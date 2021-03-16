@@ -54,7 +54,7 @@ class UserHasPermissionMixin(UserPassesTestMixin):
     def user_has_property(self) -> bool:
         """Returns if user has a particular property"""
         if user_permission_name := getattr(settings, 'INTERROGATOR_USER_PERMISSION_NAME', None):
-            return self.request.user.is_authenticated and getattr(self.request.user, user_permission_name, None)
+            return self.request.user.is_authenticated and user_permission_name
 
         return False
 
