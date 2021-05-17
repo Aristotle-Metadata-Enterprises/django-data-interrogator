@@ -155,8 +155,13 @@ class Interrogator:
 
         return field.name.startswith('_')
 
-    def get_model_queryset(self):
-        return self.base_model.objects.all()
+    def get_model_queryset(self, qs_restriction_function=None):
+        qs = self.base_model.objects.all()
+        
+        if qs_restriction_function is None:
+            return qs
+        
+        return qs_restriction_function(qs)
 
     def process_annotation_concat(self, column):
         pass
@@ -364,7 +369,7 @@ class Interrogator:
 
         return filters_all, _filters,  annotations, expression_columns, excludes
 
-    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
+    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0,**kwargs):
         errors = []
         annotation_filters = {}
 
@@ -375,51 +380,8 @@ class Interrogator:
         expression_columns = []
         output_columns = []
         query_columns = []
-
-        # Generate filters
-        for column in columns:
-            var_name = None
-            if column == "":
-                # If the field is empty, don't do anything
-                continue
-
-            if ':=' in column:
-                var_name, column = column.split(':=', 1)
-
-            # Map names in UI to django functions
-            column = normalise_field(column)
-
-            if var_name is None:
-                var_name = column
-
-            # Check if the column has permission
-            column_permission_errors = self.check_for_forbidden_column(column)
-            if column_permission_errors:
-                # If there are permission errors, add to error list, and don't continue
-                errors.extend(column_permission_errors)
-                continue
-
-            # Build columns
-            if column.startswith(tuple([a + '::' for a in self.available_aggregations.keys()])):
-                annotations[var_name] = self.get_annotation(column)
-
-            elif any(s in column for s in math_infix_symbols.keys()):
-                annotations[var_name] = self.normalise_math(column)
-                expression_columns.append(var_name)
-            else:
-                if column in wrap_sheets.keys():
-                    cols = wrap_sheets.get(column).get('columns', [])
-                    query_columns = query_columns + cols
-                else:
-                    if var_name == column:
-                        query_columns.append(var_name)
-                    else:
-                        annotations[var_name] = F(column)
-            output_columns.append(var_name)
-
-        rows = self.get_model_queryset()
-
-        # Generate filters
+        
+        
         filters_all, _filters, annotations, expression_columns, excludes = self.generate_filters(
             filters=filters,
             annotations=annotations,
@@ -446,7 +408,7 @@ class Interrogator:
 
         return rows, errors, output_columns, base_model_data
 
-    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
+    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0, **kwargs):
         if order_by is None: order_by = []
         if filters is None: filters = []
         if columns is None: columns = []
@@ -459,7 +421,7 @@ class Interrogator:
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
-                base_model, columns, filters, order_by, limit, offset
+                base_model, columns, filters, order_by, limit, offset, **kwargs,
             )
             if errors:
                 rows = rows.none()
@@ -497,6 +459,8 @@ class Interrogator:
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,
             'base_model': base_model_data
         }
+    
+
 
 
 class PivotInterrogator(Interrogator):
@@ -536,3 +500,4 @@ class PivotInterrogator(Interrogator):
             'rows': out_rows, 'col_head': col_head, 'errors': data['errors'],
             'base_model': data['base_model'], 'headers': data['headers']
         }
+
