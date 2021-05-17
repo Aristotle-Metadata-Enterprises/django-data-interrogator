@@ -156,12 +156,13 @@ class Interrogator:
         return field.name.startswith('_')
 
     def get_model_queryset(self, qs_restriction_function=None):
-        qs = self.base_model.objects.all()
+        return self.base_model.objects.all()
+        # qs = self.base_model.objects.all()
+
+        # if qs_restriction_function is None:
+        #     return qs
         
-        if qs_restriction_function is None:
-            return qs
-        
-        return qs_restriction_function(qs)
+        # return qs_restriction_function(qs)
 
     def process_annotation_concat(self, column):
         pass
@@ -369,7 +370,7 @@ class Interrogator:
 
         return filters_all, _filters,  annotations, expression_columns, excludes
 
-    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0,**kwargs):
+    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0, **kwargs):
         errors = []
         annotation_filters = {}
 
