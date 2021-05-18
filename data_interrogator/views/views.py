@@ -75,6 +75,8 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
             form_data['order_by'] = form.cleaned_data.get('sort_by', [])
             form_data['columns'] = form.cleaned_data.get('columns', [])
             form_data['base_model'] = form.cleaned_data['lead_base_model']
+            # added this field
+            form_data['model_queryset'] = form.cleaned_data.get('model_queryset',[])
 
             # Add bound form to data
             form_data['form'] = form
@@ -98,7 +100,10 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
                 data = self.interrogate(request_params['base_model'],
                                         columns=request_params['columns'],
                                         filters=request_params['filters'],
-                                        order_by=request_params['order_by'])
+                                        order_by=request_params['order_by'],
+                                        # added
+                                        model_queryset=request_params['model_queryset']
+                                        )
                 if form:
                     # Update form to use the bound form
                     form = request_params['form']
@@ -106,6 +111,9 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
         if form:
             data['form'] = form
         return self.render_to_response(data)
+    
+    # get_queryset(self):
+
 
 
 class BaseModelOptionsApi(UserHasPermissionMixin, InterrogationMixin, View):
@@ -127,7 +135,10 @@ class ApiInterrogationView(InterrogationView):
         request_data = {'filters': self.request.GET.getlist('filter_by', []),
                         'order_by': self.request.GET.getlist('sort_by', []),
                         'columns': self.request.GET.getlist('columns', []),
-                        'base_model': self.request.GET.get('lead_base_model')}
+                        'base_model': self.request.GET.get('lead_base_model'),
+                        # added
+                        'model_queryset': self.request.GET.get('model_queryset')
+                        }
 
         transformed_request = {}
 

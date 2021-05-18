@@ -42,6 +42,7 @@ def get_base_model(app_label: str, model: str) -> Model:
     """Get the actual base model, from the """
     return apps.get_model(app_label.lower(), model.lower())
 
+# might need a get_model_queryset
 
 def normalise_field(text) -> str:
     """Replace the UI access with the backend Django access"""
@@ -114,6 +115,7 @@ class Interrogator:
     allowed = Allowable.ALL_MODELS
     excluded = []
 
+
     def __init__(self, report_models=None, allowed=None, excluded=None):
         if report_models is not None:
             self.report_models = report_models
@@ -155,7 +157,8 @@ class Interrogator:
 
         return field.name.startswith('_')
 
-    def get_model_queryset(self, qs_restriction_function=None):
+    # def get_model_queryset(self, qs_restriction_function=None):
+    def get_model_queryset(self):
         return self.base_model.objects.all()
         # qs = self.base_model.objects.all()
 
@@ -163,6 +166,12 @@ class Interrogator:
         #     return qs
         
         # return qs_restriction_function(qs)
+    # get model_queryset from self if its there
+    # def get_model_queryset(self):
+    #     if self.model_queryset is None:
+    #         return self.base_model.objects.all()
+
+    #     return self.model_queryset()
 
     def process_annotation_concat(self, column):
         pass
@@ -370,7 +379,8 @@ class Interrogator:
 
         return filters_all, _filters,  annotations, expression_columns, excludes
 
-    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0, **kwargs):
+    def generate_queryset(self, base_model, model_queryset,
+    columns=None, filters=None, order_by=None, limit=None, offset=0):
         errors = []
         annotation_filters = {}
 
@@ -424,7 +434,8 @@ class Interrogator:
                         annotations[var_name] = F(column)
             output_columns.append(var_name)
 
-        rows = self.get_model_queryset()
+#       rows = self.get_model_queryset()
+        rows = model_queryset
 
         # Generate filters
         filters_all, _filters, annotations, expression_columns, excludes = self.generate_filters(
@@ -433,6 +444,7 @@ class Interrogator:
             expression_columns=expression_columns
         )
 
+    #   filters the rows which are supplied
         rows = rows.filter(**_filters)
         for key, val in filters_all.items():
             for v in val:
@@ -464,9 +476,20 @@ class Interrogator:
         count = 0
         rows = []
 
+        # gets model from kwargs - if not supplied, gets model the original way
+        model_queryset = kwargs.get("model_queryset")
+        if not model_queryset:
+            model_queryset = self.base_model.objects.all()
+
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
-                base_model, columns, filters, order_by, limit, offset, **kwargs,
+                base_model, 
+                columns,
+                filters,
+                order_by,
+                limit,
+                offset, 
+                model_queryset,
             )
             if errors:
                 rows = rows.none()
