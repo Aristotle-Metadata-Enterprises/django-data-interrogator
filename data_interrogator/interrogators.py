@@ -114,6 +114,7 @@ class Interrogator:
     #   Not this yet: ('app_label', 'model_name', ['list of field names'])
     allowed = Allowable.ALL_MODELS
     excluded = []
+    # model_queryset = None
 
 
     def __init__(self, report_models=None, allowed=None, excluded=None):
@@ -123,6 +124,8 @@ class Interrogator:
             self.allowed = allowed
         if excluded is not None:
             self.excluded = excluded
+        
+        # this could be a good place to add the qs
 
         # Clean up rules if they aren't lower cased.
         fixed_excluded = []
@@ -465,7 +468,7 @@ class Interrogator:
 
         return rows, errors, output_columns, base_model_data
 
-    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0, **kwargs):
+    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0, model_queryset=None):
         if order_by is None: order_by = []
         if filters is None: filters = []
         if columns is None: columns = []
@@ -477,7 +480,6 @@ class Interrogator:
         rows = []
 
         # gets model from kwargs - if not supplied, gets model the original way
-        model_queryset = kwargs.get("model_queryset")
         if not model_queryset:
             model_queryset = self.base_model.objects.all()
 

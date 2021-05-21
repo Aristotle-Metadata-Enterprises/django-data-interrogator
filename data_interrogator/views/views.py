@@ -1,17 +1,17 @@
 import json
 import string
-from typing import Tuple, Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
+from data_interrogator.forms import InvestigationForm
+from data_interrogator.interrogators import (Allowable, Interrogator,
+                                             normalise_field)
+from data_interrogator.utils import get_all_base_models
 from django import http
 from django.conf import settings
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
-from django.contrib.auth.mixins import UserPassesTestMixin
-
-from data_interrogator.forms import InvestigationForm
-from data_interrogator.interrogators import Interrogator, Allowable, normalise_field
-from data_interrogator.utils import get_all_base_models
 
 
 class InterrogationMixin:
@@ -27,6 +27,7 @@ class InterrogationMixin:
     report_models = []
     allowed = Allowable.ALL_APPS
     excluded = []
+    # might need to remove this here
 
     def get_interrogator(self):
         return self.interrogator_class(self.report_models, self.allowed, self.excluded)
@@ -76,7 +77,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
             form_data['columns'] = form.cleaned_data.get('columns', [])
             form_data['base_model'] = form.cleaned_data['lead_base_model']
             # added this field
-            form_data['model_queryset'] = form.cleaned_data.get('model_queryset',[])
+            # form_data['model_queryset'] = form.cleaned_data.get('model_queryset',[])
 
             # Add bound form to data
             form_data['form'] = form
@@ -102,7 +103,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
                                         filters=request_params['filters'],
                                         order_by=request_params['order_by'],
                                         # added
-                                        model_queryset=request_params['model_queryset']
+                                        model_queryset=self.model_queryset,
                                         )
                 if form:
                     # Update form to use the bound form
@@ -137,7 +138,7 @@ class ApiInterrogationView(InterrogationView):
                         'columns': self.request.GET.getlist('columns', []),
                         'base_model': self.request.GET.get('lead_base_model'),
                         # added
-                        'model_queryset': self.request.GET.get('model_queryset')
+                        # 'model_queryset': self.request.GET.get('model_queryset')
                         }
 
         transformed_request = {}
@@ -312,6 +313,8 @@ class InterrogationAutocompleteUrls:
         self.excluded = kwargs.get('excluded', self.interrogator_view_class.excluded)
         self.template_name = kwargs.get('template_name', self.interrogator_view_class.template_name)
         self.test_func = kwargs.get('test_func', None)
+        #added
+        self.model_queryset = kwargs.get('model_queryset', None)
 
     @property
     def urls(self):
@@ -320,7 +323,9 @@ class InterrogationAutocompleteUrls:
             'report_models': self.report_models,
             'allowed': self.allowed,
             'excluded': self.excluded,
-            'test_func': self.test_func
+            'test_func': self.test_func,
+            # added
+            'model_queryset': self.model_queryset,
         }
 
         return [
@@ -346,6 +351,7 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
             'report_models': self.report_models,
             'allowed': self.allowed,
             'excluded': self.excluded,
+            'model_queryset': self.model_queryset,
         }
         urls = super().urls
         urls.append(
