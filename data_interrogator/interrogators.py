@@ -479,9 +479,9 @@ class Interrogator:
         count = 0
         rows = []
 
-        # gets model from kwargs - if not supplied, gets model the original way
+        # gets model supplied - if not supplied, gets model the original way
         if not model_queryset:
-            model_queryset = self.base_model.objects.all()
+            model_queryset = self.get_model_queryset()
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
