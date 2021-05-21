@@ -481,7 +481,8 @@ class Interrogator:
 
         # gets model supplied - if not supplied, gets model the original way
         if not model_queryset:
-            model_queryset = self.get_model_queryset()
+            # model_queryset = self.get_model_queryset()
+            model_queryset  = base_model.objects.all()
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
