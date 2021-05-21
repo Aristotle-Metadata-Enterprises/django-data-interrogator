@@ -364,9 +364,18 @@ class Interrogator:
 
         return filters_all, _filters,  annotations, expression_columns, excludes
 
-    def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
+    def generate_queryset(self, 
+                            base_model, 
+                            columns=None, 
+                            filters=None, 
+                            order_by=None, 
+                            limit=None, 
+                            offset=0, 
+                            **kwargs,
+                            ):
         errors = []
         annotation_filters = {}
+        model_queryset = kwargs.get('model_queryset', None)
 
         self.base_model, base_model_data = self.validate_report_model(base_model)
         wrap_sheets = base_model_data.get('wrap_sheets', {})
@@ -417,7 +426,10 @@ class Interrogator:
                         annotations[var_name] = F(column)
             output_columns.append(var_name)
 
-        rows = self.get_model_queryset()
+        if model_queryset is None:
+            rows = self.get_model_queryset()
+        else:
+            rows = model_queryset
 
         # Generate filters
         filters_all, _filters, annotations, expression_columns, excludes = self.generate_filters(
@@ -446,7 +458,7 @@ class Interrogator:
 
         return rows, errors, output_columns, base_model_data
 
-    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
+    def interrogate(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0, **kwargs):
         if order_by is None: order_by = []
         if filters is None: filters = []
         if columns is None: columns = []
@@ -459,7 +471,13 @@ class Interrogator:
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
-                base_model, columns, filters, order_by, limit, offset
+                base_model, 
+                columns, 
+                filters, 
+                order_by, 
+                limit, 
+                offset,
+                **kwargs,
             )
             if errors:
                 rows = rows.none()

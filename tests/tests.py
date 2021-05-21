@@ -245,3 +245,26 @@ class TestInterrogators(TestCase):
             excluded,
             Product.objects.filter(name__ne="EXCLUDED").order_by('name')
         )
+    
+# 
+# need to write this test to ensure that the functionality is working
+#  that the query set is being limited 
+
+    def test_queryset_exlcude(self):
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+
+        report = Interrogator(
+            report_models=[('shop','SalesPerson'),],
+            allowed=Allowable.ALL_MODELS,
+            excluded=[]
+        )
+
+        results = report.interrogate(
+            base_model='shop:SalesPerson',
+            columns=['name','num:=count(sale)'],
+            filters=[]
+            model_queryset=
+        )
+        q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')) #.filter(num__gt=0) #.distinct()
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
