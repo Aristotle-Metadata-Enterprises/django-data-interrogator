@@ -28,6 +28,7 @@ class InterrogationMixin:
     allowed = Allowable.ALL_APPS
     excluded = []
     # might need to remove this here
+    model_queryset = None
 
     def get_interrogator(self):
         return self.interrogator_class(self.report_models, self.allowed, self.excluded)

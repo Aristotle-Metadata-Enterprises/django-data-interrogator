@@ -14,6 +14,7 @@ class AdminInterrogationRoom(InterrogationView):
     report_models = Allowable.ALL_MODELS
     allowed = Allowable.ALL_APPS
     excluded = []
+    # model_queryset = None
 
     @method_decorator(user_passes_test(lambda u: u.is_superuser))
     def get(self, request):
