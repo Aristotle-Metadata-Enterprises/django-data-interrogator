@@ -474,15 +474,18 @@ class Interrogator:
         if columns is None: columns = []
 
         errors = []
-        base_model_data = {}
+        
         output_columns = []
         count = 0
         rows = []
+        
+        self.base_model, base_model_data = self.validate_report_model(base_model)
+        base_model_data = {}
 
         # gets model supplied - if not supplied, gets model the original way
         if not model_queryset:
-            # model_queryset = self.get_model_queryset()
-            model_queryset  = base_model.objects.all()
+            model_queryset = self.get_model_queryset()
+            # model_queryset  = base_model.objects.all() - didnt work
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
