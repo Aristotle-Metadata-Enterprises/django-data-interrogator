@@ -258,13 +258,13 @@ class TestInterrogators(TestCase):
             allowed=Allowable.ALL_MODELS,
             excluded=[]
         )
-
+        model_qs = SalesPerson.objects.order_by('name').values("name").filter(name__icontains='bob')
         results = report.interrogate(
             base_model='shop:SalesPerson',
             columns=['name','num:=count(sale)'],
-            filters=[]
-            model_queryset=
+            filters=[],
+            model_queryset=model_qs,
         )
-        q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')) #.filter(num__gt=0) #.distinct()
+        q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')).filter(name__icontains='bob') #.filter(num__gt=0) #.distinct()
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
