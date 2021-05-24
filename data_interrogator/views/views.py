@@ -4,6 +4,7 @@ from typing import Tuple, Any, Callable, Dict, List
 
 from django import http
 from django.conf import settings
+from django.db.models.base import Model
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
@@ -58,8 +59,17 @@ class UserHasPermissionMixin(UserPassesTestMixin):
 
         return False
 
+class ModelQuerysetMixin():
+    model_queryset = None
 
-class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
+    def get_model_qs(self) -> Callable:
+        if self.model_queryset is not None:
+            return self.model_queryset
+        else:
+            self.model_queryset = None
+
+#aristotle uses this
+class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin, ModelQuerysetMixin):
     """The primary interrogation view, gets interrogation data and renders to a template"""
 
     def get_form(self):
@@ -75,6 +85,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
             form_data['order_by'] = form.cleaned_data.get('sort_by', [])
             form_data['columns'] = form.cleaned_data.get('columns', [])
             form_data['base_model'] = form.cleaned_data['lead_base_model']
+            form_data['model_queryset'] = self.model_queryset
 
             # Add bound form to data
             form_data['form'] = form
@@ -98,7 +109,9 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
                 data = self.interrogate(request_params['base_model'],
                                         columns=request_params['columns'],
                                         filters=request_params['filters'],
-                                        order_by=request_params['order_by'])
+                                        order_by=request_params['order_by'],
+                                        model_queryset=request_params['model_queryset']
+                                        )
                 if form:
                     # Update form to use the bound form
                     form = request_params['form']
@@ -108,7 +121,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
         return self.render_to_response(data)
 
 
-class BaseModelOptionsApi(UserHasPermissionMixin, InterrogationMixin, View):
+class BaseModelOptionsApi(UserHasPermissionMixin, InterrogationMixin, View, ModelQuerysetMixin):
     """Return a Object containing an Array of the base model options accessible"""
 
     def get(self, request):
@@ -127,7 +140,9 @@ class ApiInterrogationView(InterrogationView):
         request_data = {'filters': self.request.GET.getlist('filter_by', []),
                         'order_by': self.request.GET.getlist('sort_by', []),
                         'columns': self.request.GET.getlist('columns', []),
-                        'base_model': self.request.GET.get('lead_base_model')}
+                        'base_model': self.request.GET.get('lead_base_model'),
+                        'model_queryset': self.request.GET.get('model_queryset'),
+        }
 
         transformed_request = {}
 
@@ -145,8 +160,8 @@ class ApiInterrogationView(InterrogationView):
     def render_to_response(self, data):
         return JsonResponse(data)
 
-
-class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationMixin):
+#aristotle uses this
+class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationMixin, ModelQuerysetMixin):
     """Return list of possible selectable fields at a particular point in the data interrogator selection"""
 
     def get_allowed_fields(self) -> None:
@@ -234,6 +249,7 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
         }
 
         return data
+        SpQs = SalesPerson.objects.order_by('name').values("name").f
 
     def get_field_suggestions(self, fields, model, interrogator, prefix, args) -> List[Dict]:
         """Return the field suggestions for a model"""
@@ -287,6 +303,7 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
         )
 
 
+#aristotle directly uses this
 class InterrogationAutocompleteUrls:
     """
     Use these urls if you want to use the data interrogator via django templates
@@ -301,6 +318,7 @@ class InterrogationAutocompleteUrls:
         self.excluded = kwargs.get('excluded', self.interrogator_view_class.excluded)
         self.template_name = kwargs.get('template_name', self.interrogator_view_class.template_name)
         self.test_func = kwargs.get('test_func', None)
+        self.model_queryset = kwargs.get('model_queryset',None)
 
     @property
     def urls(self):
@@ -309,7 +327,9 @@ class InterrogationAutocompleteUrls:
             'report_models': self.report_models,
             'allowed': self.allowed,
             'excluded': self.excluded,
-            'test_func': self.test_func
+            'test_func': self.test_func,
+
+            'model_queryset': self.model_queryset,
         }
 
         return [
@@ -319,6 +339,7 @@ class InterrogationAutocompleteUrls:
         ]
 
 
+#aristotle uses this one
 class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
     """
     Use these urls if you want to use the data interrogator via an API
@@ -335,6 +356,8 @@ class InterrogationAPIAutocompleteUrls(InterrogationAutocompleteUrls):
             'report_models': self.report_models,
             'allowed': self.allowed,
             'excluded': self.excluded,
+# added
+            'model_queryset': self.model_queryset
         }
         urls = super().urls
         urls.append(

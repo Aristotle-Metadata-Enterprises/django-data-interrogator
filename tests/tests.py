@@ -250,7 +250,10 @@ class TestInterrogators(TestCase):
 # need to write this test to ensure that the functionality is working
 #  that the query set is being limited 
 
-    def test_queryset_exlcude(self):
+    def test_interrogate_excludes_qs(self):
+        '''
+        This tests whether the interrogation function will exclude the queryset if it is directly supplied to the function interrogate
+        '''
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
         report = Interrogator(
@@ -264,6 +267,30 @@ class TestInterrogators(TestCase):
             columns=['name','num:=count(sale)'],
             filters=[],
             model_queryset=model_qs,
+        )
+        q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')).filter(name__icontains='bob') #.filter(num__gt=0) #.distinct()
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
+
+    def test_interrogator_excludes_qs(self):
+        '''
+        This tests whether the view excludes the queryset supplied when it is not supplied
+        to the interrogate function - but only the view
+        '''
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
+        model_qs = SalesPerson.objects.order_by('name').values("name").filter(name__icontains='bob')
+
+        report = Interrogator(
+            report_models=[('shop','SalesPerson'),],
+            allowed=Allowable.ALL_MODELS,
+            excluded=[],
+            model_queryset=model_qs,
+        )
+        results = report.interrogate(
+            base_model='shop:SalesPerson',
+            columns=['name','num:=count(sale)'],
+            filters=[],
+            # model_queryset=model_qs,
         )
         q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')).filter(name__icontains='bob') #.filter(num__gt=0) #.distinct()
         self.assertTrue(results['count'] == q.count())
