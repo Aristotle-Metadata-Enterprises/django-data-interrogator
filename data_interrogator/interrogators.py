@@ -114,15 +114,13 @@ class Interrogator:
     allowed = Allowable.ALL_MODELS
     excluded = []
 
-    def __init__(self, report_models=None, allowed=None, excluded=None, model_queryset=None):
+    def __init__(self, report_models=None, allowed=None, excluded=None):
         if report_models is not None:
             self.report_models = report_models
         if allowed is not None:
             self.allowed = allowed
         if excluded is not None:
             self.excluded = excluded
-        if model_queryset is not None:
-            self.model_queryset = model_queryset
 
         # Clean up rules if they aren't lower cased.
         fixed_excluded = []
@@ -255,12 +253,6 @@ class Interrogator:
             annotation = self.available_aggregations[agg](field, distinct=False)
         return annotation
 
-    def get_restricted_model_queryset(self, model_queryset):
-
-        if model_queryset is None:
-            return self.model_queryset
-
-        return model_queryset
 
     def validate_report_model(self, base_model):
         app_label, model = base_model.split(':', 1)
@@ -384,11 +376,8 @@ class Interrogator:
                             ):
         errors = []
         annotation_filters = {}
-        
         model_queryset = kwargs.get('model_queryset', None)
-        # model_queryset = self.get_resticted_model_queryset(model_qs)
-
-
+        
         self.base_model, base_model_data = self.validate_report_model(base_model)
         wrap_sheets = base_model_data.get('wrap_sheets', {})
 
@@ -443,7 +432,7 @@ class Interrogator:
             rows = self.get_model_queryset()
         else:
             rows = model_queryset
-
+        
         # Generate filters
         filters_all, _filters, annotations, expression_columns, excludes = self.generate_filters(
             filters=filters,
