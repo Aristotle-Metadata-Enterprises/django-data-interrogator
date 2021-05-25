@@ -253,7 +253,6 @@ class Interrogator:
             annotation = self.available_aggregations[agg](field, distinct=False)
         return annotation
 
-
     def validate_report_model(self, base_model):
         app_label, model = base_model.split(':', 1)
         base_model = apps.get_model(app_label.lower(), model.lower())

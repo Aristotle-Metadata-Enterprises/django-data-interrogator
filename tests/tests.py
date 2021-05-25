@@ -245,10 +245,6 @@ class TestInterrogators(TestCase):
             excluded,
             Product.objects.filter(name__ne="EXCLUDED").order_by('name')
         )
-    
-# 
-# need to write this test to ensure that the functionality is working
-#  that the query set is being limited 
 
     def test_interrogate_excludes_qs(self):
         '''

@@ -4,7 +4,6 @@ from typing import Tuple, Any, Callable, Dict, List
 
 from django import http
 from django.conf import settings
-from django.db.models.base import Model
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
