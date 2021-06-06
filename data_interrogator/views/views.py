@@ -75,6 +75,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
             form_data['order_by'] = form.cleaned_data.get('sort_by', [])
             form_data['columns'] = form.cleaned_data.get('columns', [])
             form_data['base_model'] = form.cleaned_data['lead_base_model']
+            form_data['limit'] = form.cleaned_data['limit']
 
             # Add bound form to data
             form_data['form'] = form
@@ -85,7 +86,7 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
         # Add base models here so that the
         return render(self.request, self.template_name, data)
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         data = {}
         form = self.get_form()
         has_valid_columns = any([True for c in request.GET.getlist('columns', []) if c != ''])
@@ -98,7 +99,9 @@ class InterrogationView(UserHasPermissionMixin, View, InterrogationMixin):
                 data = self.interrogate(request_params['base_model'],
                                         columns=request_params['columns'],
                                         filters=request_params['filters'],
-                                        order_by=request_params['order_by'])
+                                        order_by=request_params['order_by'],
+                                        limit=request_params['limit'],
+                                        )
                 if form:
                     # Update form to use the bound form
                     form = request_params['form']

@@ -4,9 +4,13 @@
 {{ count }} rows returned
 {% endif %}
 
-<style>.table, .table * {border:1px solid black}</style>
 
-<table class="table interrogation_room">
+<pre>
+
+{{query}}
+
+</pre>
+<table class="interrogation_room">
     <thead>
         <tr>
             {% if headers %}
@@ -30,3 +34,28 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+
+
+var elems = document.querySelectorAll('textarea');
+
+for (var i = 0; i < elems.length; ++i) {
+  elems[i].addEventListener('keydown', function (e) {
+    console.log(e);
+    if (e.keyCode === 13) {
+            console.log('enter');
+        // Ctrl + Enter
+        if(e.ctrlKey) {
+            document.querySelector('form').submit()
+
+        // Enter
+        } else {
+            console.log('enter');
+        }
+    }
+    });
+}
+
+
+</script>

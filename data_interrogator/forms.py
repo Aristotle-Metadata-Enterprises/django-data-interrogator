@@ -18,9 +18,10 @@ class InterrogatorForm(forms.Form):
 
 
 class InterrogatorTableForm(InterrogatorForm):
-    filter_by = CSVMultipleCharField()
+    filter_by = CSVMultipleCharField(required=False)
     columns = CSVMultipleCharField()
-    sort_by = CSVMultipleCharField()
+    sort_by = CSVMultipleCharField(required=False)
+    limit = forms.IntegerField(required=False)
 
 
 class InvestigationForm(InterrogatorTableForm):
