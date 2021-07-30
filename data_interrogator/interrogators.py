@@ -367,9 +367,9 @@ class Interrogator:
         return filters_all, _filters,  annotation_filters, annotations, expression_columns, excludes
 
     def get_model_restriction(self, model):
-        return None
+        return {}
 
-    def get_model_restiction_filters(self, column) -> bool:
+    def get_model_restriction_filters(self, column) -> bool:
         """Return whether a forbidden join exists in the query"""
         checking_model = self.base_model
         restriction_filters = {}
@@ -443,7 +443,7 @@ class Interrogator:
                         query_columns.append(var_name)
                     else:
                         annotations[var_name] = F(column)
-            model_restriction_filters.update(self.get_model_restiction_filters(column))
+            model_restriction_filters.update(self.get_model_restriction_filters(column))
             output_columns.append(var_name)
 
         rows = self.get_model_queryset()
