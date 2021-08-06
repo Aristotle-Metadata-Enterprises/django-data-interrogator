@@ -488,13 +488,13 @@ class Interrogator:
         output_columns = []
         count = 0
         rows = []
-        query = ""
+        # query = "" # DEBUG Tool
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
                 base_model, columns, filters, order_by, limit, offset
             )
-            query = rows.query
+            # query = rows.query # DEBUG Tool
             if errors:
                 rows = rows.none()
             rows = list(rows)  # Force a database hit to check the in database state
@@ -531,11 +531,11 @@ class Interrogator:
         except Exception as e:
             rows = []
             errors.append("Something went wrong - %s" % e)
-            raise
 
         return {
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,
-            'base_model': base_model_data, 'query': query
+            'base_model': base_model_data, 
+            # 'query': query # DEBUG Tool
         }
 
 
