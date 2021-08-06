@@ -361,7 +361,6 @@ class Interrogator:
                     excludes[key] = val
                 else:
                     _filters[key] = val
-        print(f"{annotation_filters=}")
 
         # _filters.update(**annotation_filters)
         return filters_all, _filters,  annotation_filters, annotations, expression_columns, excludes
@@ -454,10 +453,6 @@ class Interrogator:
             annotations=annotations,
             expression_columns=expression_columns
         )
-        print(_filters)
-        print(filters_all)
-        print(f"{model_restriction_filters=}")
-
 
         rows = rows.filter(**_filters)
         for key, val in filters_all.items():
