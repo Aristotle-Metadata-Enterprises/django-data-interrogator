@@ -57,6 +57,7 @@ class TestInterrogatorPages(TestCase):
         response = self.client.get(url)
 
         page = smart_text(response.content)
+        print(page)
         self.assertEqual(response.status_code, 200)
 
         # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
@@ -69,6 +70,7 @@ class TestInterrogatorPages(TestCase):
                 Case(When(sale__state__iexact='NSW', then=F('sale__sale_price')), default=0)
             )
         )
+        print(q)
 
         for row in q:
             self.assertTrue(str(row['name'] in page))
