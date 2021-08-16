@@ -44,6 +44,7 @@ class TestInterrogatorPages(TestCase):
             self.assertTrue(str(row['total']) in page)
 
     def test_page_sumif(self):
+        # pointless test change
         """Test that the data interrogators sum if works"""
         params_dict = {
             'lead_base_model': 'shop:product',
