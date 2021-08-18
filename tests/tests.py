@@ -13,77 +13,101 @@ class TestInterrogatorPages(TestCase):
     """NB: these tests use the url configuration specified by the shop display app"""
     fixtures = ['data.json']
 
-    # def test_page_room(self):
-    #     """Test that the interrogator page for sales people returns the correct results"""
+    def test_page_room(self):
+        """Test that the interrogator page for sales people returns the correct results"""
 
-    #     params_dict = {
-    #         'lead_base_model': 'shop:salesperson',
-    #         'filter_by': '',
-    #         'columns': 'name||sum(sale.sale_price - sale.product.cost_price)||',
-    #         'sort_by': '',
-    #         'action': ''
-    #     }
-    #     url = '/full_report/?' + urlencode(params_dict)
-    #     response = self.client.get(url)
+        params_dict = {
+            'lead_base_model': 'shop:salesperson',
+            'filter_by': '',
+            'columns': 'name||sum(sale.sale_price - sale.product.cost_price)||',
+            'sort_by': '',
+            'action': ''
+        }
+        url = '/full_report/?' + urlencode(params_dict)
+        response = self.client.get(url)
 
-    #     page = smart_text(response.content)
-    #     self.assertEqual(response.status_code, 200)
+        page = smart_text(response.content)
+        self.assertEqual(response.status_code, 200)
 
-    #     SalesPerson = apps.get_model('shop', 'SalesPerson')
+        SalesPerson = apps.get_model('shop', 'SalesPerson')
 
-    #     # Assert that the sales people are appearing in the data interrogator view
-    #     salespeople = SalesPerson.objects.order_by('name').values("name").annotate(
-    #         total=Sum(
-    #             ExpressionWrapper(
-    #                 F('sale__sale_price') - F('sale__product__cost_price'),
-    #                 output_field=FloatField(),
-    #             ), 
-    #             distinct=False),
-    #     )
-    #     for row in salespeople:
-    #         self.assertTrue(str(row['name']) in page)
-    #         self.assertTrue(str(row['total']) in page)
+        # Assert that the sales people are appearing in the data interrogator view
+        salespeople = SalesPerson.objects.order_by('name').values("name")
+        salespeople.annotate(
+            total=Sum(
+                ExpressionWrapper(
+                    F('sale__sale_price') - F('sale__product__cost_price'),
+                    output_field=FloatField
+                ), 
+                output_field=FloatField,
+                distinct=False
+                ),
+        )
+        # print(salespeople)
+        # print(page)
+        for row in salespeople:
+            self.assertTrue(str(row['name']) in page)
+            self.assertTrue(str(row['total']) in page)
 
-    # def test_page_sumif(self):
-    #     """Test that the data interrogators sum if works"""
-    #     params_dict = {
-    #         'lead_base_model': 'shop:product',
-    #         'filter_by': '',
-    #         'columns': 'name'
-    #                    '||sale.seller.name'
-    #                    '||sumif(sale.sale_price, sale.state.iexact=NSW)'
-    #                    '||sumif(sale.sale_price, sale.state.iexact=VIC)'
-    #     }
-    #     url = '/full_report/?' + urlencode(params_dict)
-    #     response = self.client.get(url)
+    def test_page_sumif(self):
+        """Test that the data interrogators sum if works"""
+        params_dict = {
+            'lead_base_model': 'shop:product',
+            'filter_by': '',
+            'columns': 'name'
+                       '||sale.seller.name'
+                       '||sumif(sale.sale_price, sale.state.iexact=NSW)'
+                       '||sumif(sale.sale_price, sale.state.iexact=VIC)'
+        }
+        url = '/full_report/?' + urlencode(params_dict)
+        response = self.client.get(url)
 
-    #     page = smart_text(response.content)
-    #     print(page)
-    #     self.assertEqual(response.status_code, 200)
+        page = smart_text(response.content)
+        # print(page)
+        self.assertEqual(response.status_code, 200)
 
-    #     # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
-    #     Product = apps.get_model('shop', 'Product')
+        # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
+        Product = apps.get_model('shop', 'Product')
 
 
 
             # this is not happy either
-    #     q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
-    #         vic_sales=Sum(
-    #             Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0.0)
-    #         ),
-    #         nsw_sales=Sum(
-    #             Case(When(sale__state__iexact='NSW', then=F('sale__sale_price')), default=0.0)
-    #         )
-    #     )
-        
-        
-    #     # Product.objects.order_by('name').values("name", "sale__seller__name").annotate(vic_sales=Sum(Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0.0), output_field=FloatField()))
-    #     # print(q)
+        q = Product.objects.order_by('name').values("name", "sale__seller__name")
+        print(q.annotate(
+            vic_sales=Sum(
+                Case(
+                    When(
+                        sale__state__iexact='VIC', then=F('sale__sale_price')
+                        ),
+                        output_field=FloatField, 
+                        default=0.0,
+                        ),
+            ),
+            nsw_sales=Sum(
+                Case(
+                    When(
+                        sale__state__iexact='NSW', then=F('sale__sale_price')
+                        ), 
+                        default=0.0,
+                        output_field=FloatField,
+                        )
+            )
+        ))
+        print("this is q")
+        print(q)
+        print("this is p")
+        print(p)
+        for row in q:
+            print("row")
+            print(row)
+            print(str(row['name']))
+            # print(str(row['vic_sales']))
+            # print(str(row['nsw_sales']))
 
-    #     for row in q:
-    #         self.assertTrue(str(row['name'] in page))
-    #         self.assertTrue(str(row['vic_sales']) in page)
-    #         self.assertTrue(str(row['nsw_sales']) in page)
+
+            self.assertTrue(str(row['name'] in page))
+            self.assertTrue(str(row['vic_sales']) in page)
+            self.assertTrue(str(row['nsw_sales']) in page)
 
 
 class TestInterrogators(TestCase):
@@ -103,6 +127,7 @@ class TestInterrogators(TestCase):
             excluded=[]
         )
 
+        # this interrogation is broken
         results = report.interrogate(
             base_model='shop:Product',
             columns=['name','vic_sales:=sumif(sale.sale_price, sale.state.iexact=VIC)'],
@@ -111,7 +136,7 @@ class TestInterrogators(TestCase):
         
         q = Product.objects.order_by('name').values("name")
 
-        p=q.annotate(
+        q.annotate(
             vic_sales=Sum(
                 Case(
                     When(
@@ -123,18 +148,19 @@ class TestInterrogators(TestCase):
                 )
             )
             )
-        # q = Product.objects.order_by('name').values("name").annotate(
-        #     vic_sales=Sum(
-        #         # this is failing
-        #         Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0.0), output_field=DecimalField()
-        #     )
-        # )
-        print("this is q")
-        print(q)
-        print("this is p")
-        print(p)
-        # self.assertTrue(results['count'] == q.count())
-        # self.assertEqual(results['rows'], list(q))
+
+        # print("this is q")
+        # print(q)
+        # print("results")
+        # print(results)
+        # print("results['count']")
+        # print(results['count'])
+        # print(q.count())
+        
+        # print("this is p")
+        # print(p)
+        self.assertTrue(results['count'] == q.count())
+        self.assertEqual(results['rows'], list(q))
 
     def test_cannot_join_forbidden_model(self):
         SalesPerson = apps.get_model('shop', 'SalesPerson')
