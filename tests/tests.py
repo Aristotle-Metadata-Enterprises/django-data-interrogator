@@ -18,7 +18,8 @@ class TestInterrogatorPages(TestCase):
         params_dict = {
             'lead_base_model': 'shop:salesperson',
             'filter_by': '',
-            'columns': 'name,sum(sale.sale_price - sale.product.cost_price),',
+            # changed from 'name||sum(sale.sale_price - sale.product.cost_price),'
+            'columns': 'name|sum(sale.sale_price - sale.product.cost_price)|',
             'sort_by': '',
             'action': ''
         }
@@ -27,7 +28,7 @@ class TestInterrogatorPages(TestCase):
 
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
-
+        # print(page)
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
         # Assert that the sales people are appearing in the data interrogator view
@@ -52,9 +53,9 @@ class TestInterrogatorPages(TestCase):
             'lead_base_model': 'shop:product',
             'filter_by': '',
             'columns': 'name'
-                       ',sale.seller.name'
-                       ',sumif(sale.sale_price, sale.state.iexact=NSW)'
-                       ',sumif(sale.sale_price, sale.state.iexact=VIC)'
+                       '|sale.seller.name'
+                       '|sumif(sale.sale_price, sale.state.iexact=NSW)'
+                       '|sumif(sale.sale_price, sale.state.iexact=VIC)'
         }
         url = '/full_report/?' + urlencode(params_dict)
         response = self.client.get(url)
@@ -66,7 +67,7 @@ class TestInterrogatorPages(TestCase):
         # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
         Product = apps.get_model('shop', 'Product')
 
-            # this is not happy either
+        # this is not happy either
         q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
             vic_sales=Sum(
                 Case(
@@ -87,9 +88,11 @@ class TestInterrogatorPages(TestCase):
                         )
             )
         )
-        print(q)
+        # print(q)
+        # print(page)
         for row in q:
             self.assertTrue(str(row['name'] in page))
+            # print()
             self.assertTrue(str(row['vic_sales']) in page)
             self.assertTrue(str(row['nsw_sales']) in page)
 
@@ -131,6 +134,8 @@ class TestInterrogators(TestCase):
             )
             )
 
+        print(results)
+        print(q)
         # print("this is q")
         # print(q)
         # print("results")
