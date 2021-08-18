@@ -29,15 +29,15 @@ class TestInterrogatorPages(TestCase):
         self.assertEqual(response.status_code, 200)
 
         SalesPerson = apps.get_model('shop', 'SalesPerson')
-        
+
         # Assert that the sales people are appearing in the data interrogator view
         salespeople = SalesPerson.objects.order_by('name').values("name").annotate(
             total=Sum(
                 ExpressionWrapper(
                     F('sale__sale_price') - F('sale__product__cost_price'),
-                    output_field=FloatField
+                    output_field=FloatField()
                 ), 
-                output_field=FloatField,
+                output_field=FloatField(),
                 distinct=False
                 ),
         )
@@ -73,7 +73,7 @@ class TestInterrogatorPages(TestCase):
                     When(
                         sale__state__iexact='VIC', then=F('sale__sale_price')
                         ),
-                        output_field=FloatField, 
+                        output_field=FloatField(), 
                         default=0.0,
                         ),
             ),
@@ -83,7 +83,7 @@ class TestInterrogatorPages(TestCase):
                         sale__state__iexact='NSW', then=F('sale__sale_price')
                         ), 
                         default=0.0,
-                        output_field=FloatField,
+                        output_field=FloatField(),
                         )
             )
         )
@@ -126,7 +126,7 @@ class TestInterrogators(TestCase):
                         then=F('sale__sale_price'),
                     ),
                     default=0.0,
-                    output_field=FloatField
+                    output_field=FloatField()
                 )
             )
             )
