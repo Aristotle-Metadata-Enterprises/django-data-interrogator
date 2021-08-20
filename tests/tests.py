@@ -29,7 +29,6 @@ class TestInterrogatorPages(TestCase):
 
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
-        # print(page)
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
         # Assert that the sales people are appearing in the data interrogator view
@@ -62,7 +61,6 @@ class TestInterrogatorPages(TestCase):
         response = self.client.get(url)
 
         page = smart_text(response.content)
-        # print(page)
         self.assertEqual(response.status_code, 200)
 
         # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
@@ -89,11 +87,8 @@ class TestInterrogatorPages(TestCase):
                         )
             )
         )
-        # print(q)
-        # print(page)
         for row in q:
             self.assertTrue(str(row['name'] in page))
-            # print()
             self.assertTrue(str(row['vic_sales']) in page)
             self.assertTrue(str(row['nsw_sales']) in page)
 
@@ -134,19 +129,6 @@ class TestInterrogators(TestCase):
                 )
             )
             )
-
-        print(results)
-        print(q)
-        # print("this is q")
-        # print(q)
-        # print("results")
-        # print(results)
-        # print("results['count']")
-        # print(results['count'])
-        # print(q.count())
-        
-        # print("this is p")
-        # print(p)
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
 
