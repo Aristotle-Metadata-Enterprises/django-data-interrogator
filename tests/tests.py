@@ -1,7 +1,8 @@
 from django.apps import apps
 from decimal import Decimal
-from django.db.models import Case, Sum, When, F, FloatField, ExpressionWrapper
+from django.db.models import Case, Sum, When, F, ExpressionWrapper
 from django.db.models import Count
+from django.db.models.fields import DecimalField
 from django.test import TestCase
 from django.utils.encoding import smart_text
 from django.utils.http import urlencode
@@ -36,9 +37,9 @@ class TestInterrogatorPages(TestCase):
             total=Sum(
                 ExpressionWrapper(
                     F('sale__sale_price') - F('sale__product__cost_price'),
-                    output_field=FloatField()
+                    output_field=DecimalField()
                 ), 
-                output_field=FloatField(),
+                output_field=DecimalField(),
                 distinct=False
                 ),
         )
@@ -74,7 +75,7 @@ class TestInterrogatorPages(TestCase):
                     When(
                         sale__state__iexact='VIC', then=F('sale__sale_price')
                         ),
-                        output_field=FloatField(), 
+                        output_field=DecimalField(), 
                         default=0.0,
                         ),
             ),
@@ -84,7 +85,7 @@ class TestInterrogatorPages(TestCase):
                         sale__state__iexact='NSW', then=F('sale__sale_price')
                         ), 
                         default=0.0,
-                        output_field=FloatField(),
+                        output_field=DecimalField(),
                         )
             )
         )
@@ -129,7 +130,7 @@ class TestInterrogators(TestCase):
                         then=F('sale__sale_price'),
                     ),
                     default=0.0,
-                    output_field=FloatField()
+                    output_field=DecimalField()
                 )
             )
             )
@@ -241,7 +242,7 @@ class TestInterrogators(TestCase):
         )
         q = SalesPerson.objects.order_by('name').values("name").annotate(
             total=Count('sale'),
-            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'), output_field=FloatField())
+            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'), output_field=DecimalField())
         )
         for r in results['rows']:
             print("| {: <16} \t| {} | {} |".format(*r.values()))
