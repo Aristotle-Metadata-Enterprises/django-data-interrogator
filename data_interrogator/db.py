@@ -1,7 +1,7 @@
 from django.db.models import Aggregate, CharField
 from django.db.models import Case, Lookup, Sum, Q, When
 from django.db.models.expressions import Func
-from django.db.models.fields import DecimalField, Field #FloatField  # , RelatedField
+from django.db.models.fields import DecimalField, Field, FloatField  # , RelatedField
 from django.db.models.fields.related import RelatedField, ForeignObject, ManyToManyField
 
 
