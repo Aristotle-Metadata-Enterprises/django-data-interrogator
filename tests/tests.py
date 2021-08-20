@@ -65,7 +65,6 @@ class TestInterrogatorPages(TestCase):
         # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
         Product = apps.get_model('shop', 'Product')
 
-        # this is not happy either
         q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
             vic_sales=Sum(
                 Case(
@@ -109,7 +108,6 @@ class TestInterrogators(TestCase):
             excluded=[]
         )
 
-        # this interrogation is broken
         results = report.interrogate(
             base_model='shop:Product',
             columns=['name','vic_sales:=sumif(sale.sale_price, sale.state.iexact=VIC)'],
