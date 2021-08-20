@@ -30,7 +30,7 @@ INTERROGATOR_NAME_OVERRIDES = {'shop:Product': 'Products'}
 INSTALLED_APPS = (
     'shop.apps.ShopConfig',
     'data_interrogator',
-    # 'data_interrogator.admin', #BEN - remove comment
+    'data_interrogator.admin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
