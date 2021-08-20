@@ -19,7 +19,6 @@ class TestInterrogatorPages(TestCase):
         params_dict = {
             'lead_base_model': 'shop:salesperson',
             'filter_by': '',
-            # changed from 'name||sum(sale.sale_price - sale.product.cost_price),'
             'columns': 'name|sum(sale.sale_price - sale.product.cost_price)|',
             'sort_by': '',
             'action': ''
