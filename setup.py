@@ -43,5 +43,4 @@ setup(
     develop_requires=[
         'pandas'
     ]
-
 )
