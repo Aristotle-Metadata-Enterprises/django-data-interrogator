@@ -488,13 +488,11 @@ class Interrogator:
         output_columns = []
         count = 0
         rows = []
-        # query = "" # DEBUG Tool
 
         try:
             rows, errors, output_columns, base_model_data = self.generate_queryset(
                 base_model, columns, filters, order_by, limit, offset
             )
-            # query = rows.query # DEBUG Tool
             if errors:
                 rows = rows.none()
             rows = list(rows)  # Force a database hit to check the in database state
