@@ -80,7 +80,7 @@ def clean_filter(text: str) -> Union[str, Tuple[str, str, str]]:
     for interrogator_filter, django_filter in maps:
         candidate = text.split(interrogator_filter)
         if len(candidate) == 2:
-            if interrogator_filter is "=":
+            if interrogator_filter == "=":
                 return candidate[0], django_filter, candidate[1]
             return candidate[0], '__%s' % django_filter, candidate[1]
     return text
@@ -201,9 +201,9 @@ class Interrogator:
         excluded = not (app_label in self.allowed or ((app_label, model_name) in self.allowed))
         return excluded
 
-    def has_forbidden_join(self, column, base_model=None) -> bool:
+    def has_forbidden_join(self, column) -> bool:
         """Return whether a forbidden join exists in the query"""
-        checking_model = base_model or self.base_model
+        checking_model = self.base_model
 
         joins = column.split('__')
         for _, relation in enumerate(joins):
@@ -315,7 +315,7 @@ class Interrogator:
             elif key.endswith('date'):
                 val = (val + '-01-01')[:10]  # If we are filtering by a date, make sure its 'date-like'
             elif key.endswith('__isnull'):
-                if val == 'False' or val == '0':
+                if val.lower() in ['false', 'f', '0']:
                     val = False
                 else:
                     val = bool(val)
@@ -362,7 +362,31 @@ class Interrogator:
                 else:
                     _filters[key] = val
 
-        return filters_all, _filters,  annotations, expression_columns, excludes
+        # _filters.update(**annotation_filters)
+        return filters_all, _filters,  annotation_filters, annotations, expression_columns, excludes
+
+    def get_model_restriction(self, model):
+        return {}
+
+    def get_model_restriction_filters(self, column) -> bool:
+        """Return whether a forbidden join exists in the query"""
+        checking_model = self.base_model
+        restriction_filters = {}
+
+        joins = column.split('__')
+        for i, relation in enumerate(joins):
+            try:
+                attr = self.get_field_by_name(checking_model, relation)
+                if attr.related_model:
+                    if restriction := self.get_model_restriction(attr.related_model):
+                        for k, v in restriction.items():
+                            joined_rest =  "__".join(joins[:i+1]) + "__" + k
+                            restriction_filters[joined_rest] = v
+                checking_model = attr.related_model
+            except exceptions.FieldDoesNotExist:
+                pass
+
+        return restriction_filters
 
     def generate_queryset(self, base_model, columns=None, filters=None, order_by=None, limit=None, offset=0):
         errors = []
@@ -375,6 +399,9 @@ class Interrogator:
         expression_columns = []
         output_columns = []
         query_columns = []
+
+        model_restriction_filters = {}
+        model_restriction_filters.update(self.get_model_restriction(self.base_model))
 
         # Generate filters
         for column in columns:
@@ -415,12 +442,13 @@ class Interrogator:
                         query_columns.append(var_name)
                     else:
                         annotations[var_name] = F(column)
+            model_restriction_filters.update(self.get_model_restriction_filters(column))
             output_columns.append(var_name)
 
         rows = self.get_model_queryset()
 
         # Generate filters
-        filters_all, _filters, annotations, expression_columns, excludes = self.generate_filters(
+        filters_all, _filters, annotation_filters, annotations, expression_columns, excludes = self.generate_filters(
             filters=filters,
             annotations=annotations,
             expression_columns=expression_columns
@@ -431,11 +459,15 @@ class Interrogator:
             for v in val:
                 rows = rows.filter(**{key: v})
         rows = rows.exclude(**excludes)
+
+        if model_restriction_filters:
+            rows = rows.filter(**model_restriction_filters)
         rows = rows.values(*query_columns)
 
         if annotations:
             rows = rows.annotate(**annotations)
             rows = rows.filter(**annotation_filters)
+
         if order_by:
             ordering = map(normalise_field, order_by)
             rows = rows.order_by(*ordering)
@@ -464,6 +496,11 @@ class Interrogator:
             if errors:
                 rows = rows.none()
             rows = list(rows)  # Force a database hit to check the in database state
+            _rows = []
+            for row in rows:
+                if row not in _rows:
+                    _rows.append(row)
+            rows = _rows
             count = len(rows)
 
         except di_exceptions.InvalidAnnotationError as e:
@@ -495,7 +532,8 @@ class Interrogator:
 
         return {
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,
-            'base_model': base_model_data
+            'base_model': base_model_data, 
+            # 'query': query # DEBUG Tool
         }
 
 

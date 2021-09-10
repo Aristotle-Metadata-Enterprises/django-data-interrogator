@@ -1,7 +1,8 @@
 from django.apps import apps
 from decimal import Decimal
-from django.db.models import Case, Sum, When, F, FloatField, ExpressionWrapper
+from django.db.models import Case, Sum, When, F, ExpressionWrapper
 from django.db.models import Count
+from django.db.models.fields import DecimalField
 from django.test import TestCase
 from django.utils.encoding import smart_text
 from django.utils.http import urlencode
@@ -18,7 +19,7 @@ class TestInterrogatorPages(TestCase):
         params_dict = {
             'lead_base_model': 'shop:salesperson',
             'filter_by': '',
-            'columns': 'name||sum(sale.sale_price - sale.product.cost_price)||',
+            'columns': 'name|sum(sale.sale_price - sale.product.cost_price)|',
             'sort_by': '',
             'action': ''
         }
@@ -27,7 +28,6 @@ class TestInterrogatorPages(TestCase):
 
         page = smart_text(response.content)
         self.assertEqual(response.status_code, 200)
-
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
         # Assert that the sales people are appearing in the data interrogator view
@@ -35,10 +35,13 @@ class TestInterrogatorPages(TestCase):
             total=Sum(
                 ExpressionWrapper(
                     F('sale__sale_price') - F('sale__product__cost_price'),
-                    output_field=FloatField(),
+                    output_field=DecimalField()
                 ), 
-                distinct=False),
+                output_field=DecimalField(),
+                distinct=False
+                ),
         )
+
         for row in salespeople:
             self.assertTrue(str(row['name']) in page)
             self.assertTrue(str(row['total']) in page)
@@ -49,9 +52,9 @@ class TestInterrogatorPages(TestCase):
             'lead_base_model': 'shop:product',
             'filter_by': '',
             'columns': 'name'
-                       '||sale.seller.name'
-                       '||sumif(sale.sale_price, sale.state.iexact=NSW)'
-                       '||sumif(sale.sale_price, sale.state.iexact=VIC)'
+                       '|sale.seller.name'
+                       '|sumif(sale.sale_price, sale.state.iexact=NSW)'
+                       '|sumif(sale.sale_price, sale.state.iexact=VIC)'
         }
         url = '/full_report/?' + urlencode(params_dict)
         response = self.client.get(url)
@@ -61,15 +64,27 @@ class TestInterrogatorPages(TestCase):
 
         # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
         Product = apps.get_model('shop', 'Product')
+
         q = Product.objects.order_by('name').values("name", "sale__seller__name").annotate(
             vic_sales=Sum(
-                Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0)
+                Case(
+                    When(
+                        sale__state__iexact='VIC', then=F('sale__sale_price')
+                        ),
+                        output_field=DecimalField(), 
+                        default=0.0,
+                        ),
             ),
             nsw_sales=Sum(
-                Case(When(sale__state__iexact='NSW', then=F('sale__sale_price')), default=0)
+                Case(
+                    When(
+                        sale__state__iexact='NSW', then=F('sale__sale_price')
+                        ), 
+                        default=0.0,
+                        output_field=DecimalField(),
+                        )
             )
         )
-
         for row in q:
             self.assertTrue(str(row['name'] in page))
             self.assertTrue(str(row['vic_sales']) in page)
@@ -98,12 +113,19 @@ class TestInterrogators(TestCase):
             columns=['name','vic_sales:=sumif(sale.sale_price, sale.state.iexact=VIC)'],
             filters=[]
         )
-
+        
         q = Product.objects.order_by('name').values("name").annotate(
             vic_sales=Sum(
-                Case(When(sale__state__iexact='VIC', then=F('sale__sale_price')), default=0)
+                Case(
+                    When(
+                        sale__state__iexact='VIC',
+                        then=F('sale__sale_price'),
+                    ),
+                    default=0.0,
+                    output_field=DecimalField()
+                )
             )
-        )
+            )
         self.assertTrue(results['count'] == q.count())
         self.assertEqual(results['rows'], list(q))
 
@@ -199,7 +221,7 @@ class TestInterrogators(TestCase):
         )
         q = SalesPerson.objects.order_by('name').values("name").annotate(
             total=Count('sale'),
-            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'))
+            profit=Sum(F('sale__sale_price') - F('sale__product__cost_price'), output_field=DecimalField())
         )
         for r in results['rows']:
             print("| {: <16} \t| {} | {} |".format(*r.values()))

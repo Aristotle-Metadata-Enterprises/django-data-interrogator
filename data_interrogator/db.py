@@ -1,7 +1,7 @@
 from django.db.models import Aggregate, CharField
 from django.db.models import Case, Lookup, Sum, Q, When
 from django.db.models.expressions import Func
-from django.db.models.fields import Field  # , RelatedField
+from django.db.models.fields import DecimalField, Field, FloatField  # , RelatedField
 from django.db.models.fields.related import RelatedField, ForeignObject, ManyToManyField
 
 
@@ -32,10 +32,17 @@ class SumIf(Sum):
         SQL: `SUM(CASE WHEN condition THEN field ELSE NULL END)`
     """
 
-    def __init__(self, field, condition=None, **lookups):
+    def __init__(self, field, condition=None, output_field=DecimalField(), **lookups):
+        # Default output field is DecimalField - to decimal precision as a safe default.
         if lookups and condition is None:
             condition = Q(**lookups)
-        case = Case(When(condition, then=field), default=0)
+        case = Case(
+            When(
+                condition, then=field
+                ), 
+                default=0,
+                output_field=output_field
+                )
         super(SumIf, self).__init__(case)
 
 

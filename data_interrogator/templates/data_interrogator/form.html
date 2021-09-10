@@ -7,7 +7,7 @@
     </ul>
 {% endif %}
 <form method="get">
-    {{ form }}
+    {{ form.as_table }}
     <button name="action" type="submit" value="">Update table</button>
     {% if request.user.is_staff %}
     <button name="action" type="submit" value="makestatic">Make a static table</button>
