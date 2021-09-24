@@ -150,9 +150,7 @@ class Interrogator:
 
     def is_hidden_field(self, field) -> bool:
         """Returns whether a field begins with an underscore and so is hidden"""
-        if hasattr(settings, 'INTERROGATOR_INCLUDED_HIDDEN_FIELDS') and field.name in settings.INTERROGATOR_INCLUDED_HIDDEN_FIELDS:
-            return False
-
+        # TODO: Should this even be here, I don't think this is a django convention.
         return field.name.startswith('_')
 
     def get_model_queryset(self):
