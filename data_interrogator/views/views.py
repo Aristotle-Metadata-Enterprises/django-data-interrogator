@@ -198,10 +198,7 @@ class InterrogationAutoCompleteView(UserHasPermissionMixin, View, InterrogationM
 
     def is_field_excluded(self, model, field, interrogator) -> bool:
         """Return if the field is excluded from interrogation"""
-        return (
-            interrogator.is_excluded_field(model, normalise_field(field.name)) or
-            interrogator.is_hidden_field(field)
-        )
+        return interrogator.is_excluded_field(model, normalise_field(field.name))
 
     def is_model_excluded(self, field, interrogator) -> bool:
         """Return if the model is excluded from interrogation"""

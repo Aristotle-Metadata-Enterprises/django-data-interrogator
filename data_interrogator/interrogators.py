@@ -181,7 +181,7 @@ class Interrogator:
         Accepts dundered path from model
         TODO: currently we're not doing per field permission checks, add this later
         """
-        return False
+        return self.is_hidden_field(field)
 
     def is_excluded_model(self, model_class) -> bool:
         """Returns whether a model should be excluded"""
