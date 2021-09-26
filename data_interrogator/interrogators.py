@@ -194,7 +194,7 @@ class Interrogator:
         excluded = not (app_label in self.allowed or ((app_label, model_name) in self.allowed))
         return excluded
 
-    def has_forbidden_join(self, column) -> bool:
+    def has_forbidden_field(self, column) -> bool:
         """Return whether a forbidden join exists in the query"""
         checking_model = self.base_model
 
@@ -202,12 +202,15 @@ class Interrogator:
         for _, relation in enumerate(joins):
             if checking_model:
                 try:
-                    attr = self.get_field_by_name(checking_model, relation)
-                    if attr.related_model:
-                        if self.is_excluded_model(attr.related_model):
+                    field = self.get_field_by_name(checking_model, relation)
+                    if field.related_model:
+                        if self.is_excluded_model(field.related_model):
                             # Despite the join/field being named differently, this column is forbidden!
                             return True
-                    checking_model = attr.related_model
+                    if self.is_excluded_field(field):
+                        # Despite the join/field being named differently, this column is forbidden!
+                        return True
+                    checking_model = field.related_model
                 except exceptions.FieldDoesNotExist:
                     pass
 
@@ -271,14 +274,14 @@ class Interrogator:
         errors: List[str] = []
 
         # Check if the column has permission
-        if self.has_forbidden_join(column):
+        if self.has_forbidden_field(column):
             errors.append(
                 "Joining tables with the column [{}] is forbidden, this column is removed from the output.".format(
                     column))
         # Check aggregation includes a forbidden column
         if '::' in column:
             check_col = column.split('::', 1)[-1]
-            if self.has_forbidden_join(check_col):
+            if self.has_forbidden_field(check_col):
                 errors.append(
                     "Aggregating tables using the column [{}] is forbidden, this column is removed from the output.".format(
                         column))
@@ -294,7 +297,7 @@ class Interrogator:
         for index, expression in enumerate(filters):
             field, exp, val = clean_filter(normalise_field(expression))
 
-            if self.has_forbidden_join(field):
+            if self.has_forbidden_field(field):
                 errors.append(
                     f"Filtering with the column [{field}] is forbidden, this filter is removed from the output."
                 )
@@ -538,14 +541,14 @@ class PivotInterrogator(Interrogator):
     def get_base_annotations(self):
         aggs = {
             x: self.get_annotation(normalise_field(x)) for x in self.aggregators
-            if not self.has_forbidden_join(column=x)
+            if not self.has_forbidden_field(column=x)
         }
         aggs.update({"cell": Count(1)})
         return aggs
 
     def pivot(self):
         # Only accept the first two valid columns
-        self.columns = [normalise_field(c) for c in self.columns if not self.has_forbidden_join(column=c)][:2]
+        self.columns = [normalise_field(c) for c in self.columns if not self.has_forbidden_field(column=c)][:2]
 
         data = self.interrogate()
         out_rows = {}
