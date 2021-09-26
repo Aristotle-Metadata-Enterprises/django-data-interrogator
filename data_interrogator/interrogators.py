@@ -207,7 +207,7 @@ class Interrogator:
                         if self.is_excluded_model(field.related_model):
                             # Despite the join/field being named differently, this column is forbidden!
                             return True
-                    if self.is_excluded_field(field):
+                    if self.is_excluded_field(checking_model, field):
                         # Despite the join/field being named differently, this column is forbidden!
                         return True
                     checking_model = field.related_model
