@@ -148,11 +148,6 @@ class Interrogator:
         else:
             self.allowed_models = Allowable.ALL_MODELS
 
-    def is_hidden_field(self, field) -> bool:
-        """Returns whether a field begins with an underscore and so is hidden"""
-        # TODO: Should this even be here, I don't think this is a django
-        return field.name.startswith('_')
-
     def get_model_queryset(self):
         return self.base_model.objects.all()
 
@@ -174,12 +169,12 @@ class Interrogator:
     def get_field_by_name(self, model, field_name):
         return model._meta.get_field(field_name)
 
-    def is_excluded_field(self, field_path, base_model=None) -> bool:
+    def is_excluded_field(self, model, field) -> bool:
         """
-        Accepts dundered path from model
+        Accepts model and field object
         TODO: currently we're not doing per field permission checks, add this later
         """
-        return self.is_hidden_field(field)
+        return False
 
     def is_excluded_model(self, model_class) -> bool:
         """Returns whether a model should be excluded"""
