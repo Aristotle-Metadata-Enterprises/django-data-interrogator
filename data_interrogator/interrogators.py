@@ -195,7 +195,7 @@ class Interrogator:
         return excluded
 
     def has_forbidden_field(self, column) -> bool:
-        """Return whether a forbidden join exists in the query"""
+        """Return whether a forbidden field exists in the query"""
         checking_model = self.base_model
 
         joins = column.split('__')
