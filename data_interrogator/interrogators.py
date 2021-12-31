@@ -6,7 +6,7 @@ from typing import Union, Tuple, List
 from django.apps import apps
 from django.core import exceptions
 from django.conf import settings
-from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, Model
+from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, Model, JSONField
 from django.db.models import functions as func
 
 from data_interrogator import exceptions as di_exceptions
@@ -164,7 +164,8 @@ class Interrogator:
         model = self.base_model
         args = column.split('__')
         for a in args:
-            model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
+            if model:
+                model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
 
     def get_field_by_name(self, model, field_name):
         return model._meta.get_field(field_name)
@@ -203,6 +204,9 @@ class Interrogator:
             if checking_model:
                 try:
                     field = self.get_field_by_name(checking_model, relation)
+                    if isinstance(field, JSONField):
+                        # This is safe as you can't foreign key out of a JSONField
+                        return False
                     if field.related_model:
                         if self.is_excluded_model(field.related_model):
                             # Despite the join/field being named differently, this column is forbidden!
@@ -373,6 +377,9 @@ class Interrogator:
         for i, relation in enumerate(joins):
             try:
                 attr = self.get_field_by_name(checking_model, relation)
+                if isinstance(attr, JSONField):
+                    # This is safe as you can't foreign key out of a JSONField
+                    break
                 if attr.related_model:
                     if restriction := self.get_model_restriction(attr.related_model):
                         for k, v in restriction.items():
@@ -451,6 +458,7 @@ class Interrogator:
         )
 
         rows = rows.filter(**_filters)
+
         for key, val in filters_all.items():
             for v in val:
                 rows = rows.filter(**{key: v})
@@ -504,6 +512,7 @@ class Interrogator:
 
         except ValueError as e:
             rows = []
+            raise
             if limit is None:
                 errors.append("Limit must be a number")
             elif limit < 1:
