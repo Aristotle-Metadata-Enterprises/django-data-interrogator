@@ -165,6 +165,8 @@ class Interrogator:
         args = column.split('__')
         for a in args:
             if model:
+                # If there is no model, its not a foreign key, so its safe as its either
+                # a transform or a key JSON lookup.
                 model = [f for f in model._meta.get_fields() if f.name == a][0].related_model
 
     def get_field_by_name(self, model, field_name):
@@ -512,7 +514,6 @@ class Interrogator:
 
         except ValueError as e:
             rows = []
-            raise
             if limit is None:
                 errors.append("Limit must be a number")
             elif limit < 1:
