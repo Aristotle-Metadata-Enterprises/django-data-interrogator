@@ -575,7 +575,6 @@ class Interrogator:
             else:
                 errors.append("An error was found with your query:\n%s" % e)
         except Exception as e:
-            raise
             rows = []
             errors.append("Something went wrong - %s" % e)
 
