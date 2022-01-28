@@ -12,6 +12,13 @@ from django.db.models import functions as func
 from data_interrogator import exceptions as di_exceptions
 from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
 
+try:
+    from garnett.expressions import L
+    from garnett.fields import TranslatedField
+    GARNETT_ENABLED = True
+except:
+    GARNETT_ENABLED = False
+
 # Utility functions
 math_infix_symbols = {
     '-': lambda a, b: a - b,
@@ -37,6 +44,8 @@ LITTLE_MULTIPLIERS = {
     'microfortnight': 1.2,  # sure why not?
 }
 
+LEXP = "l_exp____"
+
 
 def get_base_model(app_label: str, model: str) -> Model:
     """Get the actual base model, from the """
@@ -46,6 +55,12 @@ def get_base_model(app_label: str, model: str) -> Model:
 def normalise_field(text) -> str:
     """Replace the UI access with the backend Django access"""
     return text.strip().replace('(', '::').replace(')', '').replace(".", "__")
+
+
+def clean_lexp_key(key):
+    if key.startswith(LEXP):
+        return key[len(LEXP):]
+    return key
 
 
 def normalise_math(expression):
@@ -220,6 +235,25 @@ class Interrogator:
                 except exceptions.FieldDoesNotExist:
                     pass
 
+        return False
+
+    def is_translatable(self, column) -> bool:
+        """Return whether a forbidden field exists in the query"""
+        if not GARNETT_ENABLED:
+            return False
+        
+        checking_model = self.base_model
+
+        joins = list(enumerate(column.split('__')))
+        for i, relation in joins:
+            if checking_model:
+                try:
+                    field = self.get_field_by_name(checking_model, relation)
+                    if isinstance(field, TranslatedField):
+                        return i == len(joins) - 1
+                    checking_model = field.related_model
+                except exceptions.FieldDoesNotExist:
+                    pass
         return False
 
     def get_base_annotations(self):
@@ -404,6 +438,7 @@ class Interrogator:
         expression_columns = []
         output_columns = []
         query_columns = []
+        query_columns_exp = {}
 
         model_restriction_filters = {}
         model_restriction_filters.update(self.get_model_restriction(self.base_model))
@@ -444,7 +479,10 @@ class Interrogator:
                     query_columns = query_columns + cols
                 else:
                     if var_name == column:
-                        query_columns.append(var_name)
+                        if self.is_translatable(column):
+                            query_columns_exp.update({f"{LEXP}{var_name}": L(var_name)})
+                        else:
+                            query_columns.append(var_name)
                     else:
                         annotations[var_name] = F(column)
             model_restriction_filters.update(self.get_model_restriction_filters(column))
@@ -468,7 +506,7 @@ class Interrogator:
 
         if model_restriction_filters:
             rows = rows.filter(**model_restriction_filters)
-        rows = rows.values(*query_columns)
+        rows = rows.values(*query_columns, **query_columns_exp)
 
         if annotations:
             rows = rows.annotate(**annotations)
@@ -505,6 +543,10 @@ class Interrogator:
             _rows = []
             for row in rows:
                 if row not in _rows:
+                    row = {
+                        clean_lexp_key(k):v
+                        for k, v in row.items()
+                    }
                     _rows.append(row)
             rows = _rows
             count = len(rows)
@@ -533,6 +575,7 @@ class Interrogator:
             else:
                 errors.append("An error was found with your query:\n%s" % e)
         except Exception as e:
+            raise
             rows = []
             errors.append("Something went wrong - %s" % e)
 
