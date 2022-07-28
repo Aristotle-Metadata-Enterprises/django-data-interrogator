@@ -2,7 +2,7 @@ default_app_config = 'data_interrogator.apps.InterrogatorConfig'
 
 __version_info__ = {
     'major': 0,
-    'minor': 1,
+    'minor': 2,
     'micro': 0,
     'releaselevel': 'beta',
     'serial': 1
