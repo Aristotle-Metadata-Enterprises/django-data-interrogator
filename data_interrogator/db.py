@@ -1,9 +1,11 @@
-from django.db.models import Aggregate, CharField
-from django.db.models import Case, Lookup, Sum, Q, When
+from django.db.models import Aggregate, CharField, TextField
+from django.db.models import Case, Lookup, Sum, Q, When, Value
 from django.db.models.expressions import Func
 from django.db.models.fields import DecimalField, Field, FloatField  # , RelatedField
 from django.db.models.fields.related import RelatedField, ForeignObject, ManyToManyField
 
+
+from django.db.models.functions import Lower
 
 # This is different to the built in Django Concat command, as that concats columns in a row
 # This concatenates one column from a selection of rows together.
@@ -12,17 +14,32 @@ class GroupConcat(Aggregate):
     function = 'GROUP_CONCAT'
     template = '%(function)s(%(distinct)s%(expressions)s)'
 
-    def __init__(self, expression, distinct=False, **extra):
-        super(GroupConcat, self).__init__(
+    def __init__(self, expression, distinct=False, output_field=CharField(), **extra):
+        super().__init__(
             expression,
             distinct='DISTINCT ' if distinct else '',
-            output_field=CharField(),
+            output_field=output_field,
             **extra)
 
     def as_microsoft(self, compiler, connection):
         self.function = 'max'  # MSSQL doesn't support GROUP_CONCAT yet.
         self.template = '%(function)s(%(expressions)s)'
-        return super(GroupConcat, self).as_sql(compiler, connection)
+        return super().as_sql(compiler, connection)
+
+    def as_postgresql(self, compiler, connection):
+        self.function = "STRING_AGG"
+        self.template = "%(function)s(%(distinct)s%(expressions)s %(ordering)s)"
+        return super().as_sql(compiler, connection)
+
+
+class ComplexLookup(GroupConcat):
+    def __init__(self, lookup_field, condition, lookup_value, output_field=TextField(), **lookups):
+        expression = Case(
+            When(**{lookup_field: condition, 'then': lookup_value}),
+            default=Value(""),
+            output_field = output_field
+        )
+        super().__init__(expression)
 
 
 class SumIf(Sum):
@@ -85,7 +102,7 @@ class DateDiff(Func):
         return super(DateDiff, self).as_sql(compiler, connection)
 
     def as_sql(self, compiler, connection, function=None, template=None):
-        if connection.vendor is 'microsoft':
+        if connection.vendor == 'microsoft':
             return self.as_microsoft(compiler, connection)
         return super(DateDiff, self).as_sql(compiler, connection)
 

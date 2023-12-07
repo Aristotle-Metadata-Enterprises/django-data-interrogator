@@ -20,6 +20,15 @@ class Product(models.Model):
         return self.name
 
 
+class ProductTag(models.Model):
+    name = models.CharField(max_length=50)
+    data = models.TextField()
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.product.name}: {self.name}: {self.data}"
+
+
 class Branch(models.Model):
     verbose_name = "Sales Branch"
     VIC = 'VIC'

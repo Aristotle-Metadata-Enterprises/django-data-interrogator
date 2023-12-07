@@ -171,3 +171,12 @@ A small number of `aggregate functions <https://docs.djangoproject.com/en/1.8/re
 Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be normalised in django to ``QuerySet.filter(name=F('perp_name'))``.
+
+
+Setting up a test environment
+=============================
+
+* pipenv install
+* pipenv shell
+* PYTHONPATH=.:./app:./app/shop DJANGO_SETTINGS_MODULE=app.settings django-admin [YOUR_COMMAND]
+

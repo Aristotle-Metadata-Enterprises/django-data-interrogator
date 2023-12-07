@@ -103,3 +103,12 @@ def get_all_base_models(bases):
 
     all_models = list(all_models.items())
     return all_models
+
+
+def table_view(qs, values, padding=15):
+    data = qs.values(*values)
+    print("| ".join(
+        [f"{v}\t".expandtabs(padding) for v in values]
+    ))
+    for data in qs.values_list(*values):
+        print("| ".join([f"{v}\t".expandtabs(padding) for v in data]))

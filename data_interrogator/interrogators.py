@@ -10,7 +10,7 @@ from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrap
 from django.db.models import functions as func
 
 from data_interrogator import exceptions as di_exceptions
-from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
+from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf, ComplexLookup
 
 try:
     from garnett.expressions import L
@@ -121,6 +121,7 @@ class Interrogator:
         "group": GroupConcat,
         "concat": func.Concat,
         "sumif": SumIf,
+        "lookup": ComplexLookup,
     }
     errors = []
     report_models = Allowable.ALL_MODELS
@@ -264,7 +265,13 @@ class Interrogator:
 
     def get_annotation(self, column):
         agg, field = column.split('::', 1)
-        if agg == 'sumif':
+        if agg == 'lookup':
+            try:
+                field, cond, value = field.split(',', 2)
+            except:
+                raise di_exceptions.InvalidAnnotationError("Not enough arguments - must be 3")
+            annotation = self.available_aggregations[agg](field, cond, value)
+        elif agg == 'sumif':
             try:
                 field, cond = field.split(',', 1)
             except:
