@@ -19,7 +19,7 @@ services:
     environment:
       - PYTHONPATH=.:./app:./app/shop
       - DJANGO_SETTINGS_MODULE=app.settings
-      - DATABASE_URL=postgres://postgres:changeme@postgres_db:5432/test
+      - DATABASE_URL=postgres://postgres:changeme@postgres_db:5432/postgres
     # env_file:
     #   - default.env
     #   - .env

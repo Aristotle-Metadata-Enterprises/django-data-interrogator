@@ -282,7 +282,7 @@ class Interrogator:
                 condition_key, condition_val = condition.split('=', 1)
                 conditions[normalise_field(condition_key)] = normalise_field(condition_val)
             annotation = self.available_aggregations[agg](field=field, **conditions)
-        elif agg == 'join':
+        elif agg == 'concat':
             fields = []
             for f in field.split(','):
                 if f.startswith(('"', "'")):
@@ -566,7 +566,7 @@ class Interrogator:
 
         except ValueError as e:
             rows = []
-            if limit < 0:
+            if limit and type(limit) is int and limit < 0:
                 errors.append("Limit must be a number greater than zero")
             else:
                 errors.append("Something went wrong - %s" % e)
