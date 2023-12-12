@@ -4,7 +4,6 @@ from django.db.models import Case, Sum, When, F, ExpressionWrapper
 from django.db.models import Count
 from django.db.models.fields import DecimalField
 from django.test import TestCase
-from django.utils.encoding import smart_text
 from django.utils.http import urlencode
 from data_interrogator.interrogators import Interrogator, Allowable
 
@@ -26,7 +25,7 @@ class TestInterrogatorPages(TestCase):
         url = '/full_report/?' + urlencode(params_dict)
         response = self.client.get(url)
 
-        page = smart_text(response.content)
+        page = str(response.content)
         self.assertEqual(response.status_code, 200)
         SalesPerson = apps.get_model('shop', 'SalesPerson')
 
@@ -59,7 +58,7 @@ class TestInterrogatorPages(TestCase):
         url = '/full_report/?' + urlencode(params_dict)
         response = self.client.get(url)
 
-        page = smart_text(response.content)
+        page = str(response.content)
         self.assertEqual(response.status_code, 200)
 
         # Assert that the SumIf in the data interrogator works the same way to Case in the Django ORM
