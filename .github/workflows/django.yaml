@@ -42,6 +42,7 @@ jobs:
       - name: Install django
         run: |
           pip install -q Django==3.1
+          pip install dj_database_url
           pip install .
 
       - name: Run tests
