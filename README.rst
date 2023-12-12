@@ -221,10 +221,11 @@ Most django queries in filters match a field with a given string, however there 
 Setting up a test environment
 =============================
 
-* cd dev
-* docker-compose run dev bash
-* django-admin [YOUR_COMMAND]
+* ``cd dev``
+* ``docker-compose run dev bash``
+* ``django-admin [YOUR_COMMAND]``
 
 To play with data load the shops fixture
-* django-admin migrate
-* django-admin loaddata data.json
+
+* ``django-admin migrate``
+* ``django-admin loaddata data.json``
