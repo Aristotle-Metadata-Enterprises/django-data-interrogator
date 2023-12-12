@@ -566,9 +566,7 @@ class Interrogator:
 
         except ValueError as e:
             rows = []
-            if limit is None:
-                errors.append("Limit must be a number")
-            elif limit < 1:
+            if limit < 0:
                 errors.append("Limit must be a number greater than zero")
             else:
                 errors.append("Something went wrong - %s" % e)
@@ -588,8 +586,6 @@ class Interrogator:
         except Exception as e:
             rows = []
             errors.append("Something went wrong - %s" % e)
-
-        print(rows)
 
         return {
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,

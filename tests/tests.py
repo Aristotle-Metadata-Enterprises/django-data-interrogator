@@ -18,7 +18,7 @@ class TestInterrogatorPages(TestCase):
         params_dict = {
             'lead_base_model': 'shop:salesperson',
             'filter_by': '',
-            'columns': 'name|sum(sale.sale_price - sale.product.cost_price)|',
+            'columns': 'name|total_sales:=sum(sale.sale_price-sale.product.cost_price)|',
             'sort_by': '',
             'action': ''
         }
@@ -31,7 +31,7 @@ class TestInterrogatorPages(TestCase):
 
         # Assert that the sales people are appearing in the data interrogator view
         salespeople = SalesPerson.objects.order_by('name').values("name").annotate(
-            total=Sum(
+            total_sales=Sum(
                 ExpressionWrapper(
                     F('sale__sale_price') - F('sale__product__cost_price'),
                     output_field=DecimalField()
@@ -41,9 +41,12 @@ class TestInterrogatorPages(TestCase):
                 ),
         )
 
+        results = {row['name']: row['total_sales'] for row in response.context['rows']}
+
         for row in salespeople:
             self.assertTrue(str(row['name']) in page)
-            self.assertTrue(str(row['total']) in page)
+            self.assertTrue(str(int(row['total_sales'])) in page)
+            self.assertEqual(row['total_sales'], results[row['name']])
 
     def test_page_sumif(self):
         """Test that the data interrogators sum if works"""
@@ -52,8 +55,8 @@ class TestInterrogatorPages(TestCase):
             'filter_by': '',
             'columns': 'name'
                        '|sale.seller.name'
-                       '|sumif(sale.sale_price, sale.state.iexact=NSW)'
-                       '|sumif(sale.sale_price, sale.state.iexact=VIC)'
+                       '|sumif(sale.sale_price,sale.state.iexact=NSW)'
+                       '|sumif(sale.sale_price,sale.state.iexact=VIC)'
         }
         url = '/full_report/?' + urlencode(params_dict)
         response = self.client.get(url)
@@ -110,7 +113,8 @@ class TestInterrogators(TestCase):
         results = report.interrogate(
             base_model='shop:Product',
             columns=['name','vic_sales:=sumif(sale.sale_price, sale.state.iexact=VIC)'],
-            filters=[]
+            filters=[],
+            order_by=['name']
         )
         
         q = Product.objects.order_by('name').values("name").annotate(
@@ -198,7 +202,8 @@ class TestInterrogators(TestCase):
         results = report.interrogate(
             base_model='shop:SalesPerson',
             columns=['name','num:=count(sale)'],
-            filters=[]
+            filters=[],
+            order_by=['name'],
         )
         q = SalesPerson.objects.order_by('name').values("name").annotate(num=Count('sale')) #.filter(num__gt=0) #.distinct()
         self.assertTrue(results['count'] == q.count())
@@ -217,6 +222,7 @@ class TestInterrogators(TestCase):
         results = report.interrogate(
             'shop:SalesPerson',
             columns=['name','profit:=sum(sale.sale_price - sale.product.cost_price)','total:=count(sale)'],
+            order_by=['name'],
         )
         q = SalesPerson.objects.order_by('name').values("name").annotate(
             total=Count('sale'),
