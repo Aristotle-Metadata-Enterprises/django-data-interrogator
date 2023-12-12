@@ -584,9 +584,12 @@ class Interrogator:
                 errors.append("The requested field '%s' was not found in the database." % field)
             else:
                 errors.append("An error was found with your query:\n%s" % e)
+            raise e
         except Exception as e:
             rows = []
             errors.append("Something went wrong - %s" % e)
+
+        print(rows)
 
         return {
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,

@@ -181,4 +181,5 @@ Setting up a test environment
 * PYTHONPATH=.:./app:./app/shop DJANGO_SETTINGS_MODULE=app.settings django-admin [YOUR_COMMAND]
 
 To play with data load the shops fixture
+* PYTHONPATH=.:./app:./app/shop DJANGO_SETTINGS_MODULE=app.settings django-admin migrate
 * PYTHONPATH=.:./app:./app/shop DJANGO_SETTINGS_MODULE=app.settings django-admin loaddata data.json

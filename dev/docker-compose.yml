@@ -1,0 +1,34 @@
+# This is a very simple docker-compose file 
+# to make testing different databases easier on a local machine
+version: '3'
+
+services:
+  # maria_db:
+  #   image: mariadb:10
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=changeme
+  postgres_db:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=changeme
+
+  dev:
+    build:
+      context: ..
+      dockerfile: ./dev/Dockerfile
+    environment:
+      - PYTHONPATH=.:./app:./app/shop
+      - DJANGO_SETTINGS_MODULE=app.settings
+      - DATABASE_URL=postgres://postgres:changeme@postgres_db:5432/test
+    # env_file:
+    #   - default.env
+    #   - .env
+    ports:
+      - "8001:8001"
+    depends_on:
+      # - maria_db
+      - postgres_db
+    volumes:
+      - ..:/usr/src/app
+    command:
+      tail -f /dev/null

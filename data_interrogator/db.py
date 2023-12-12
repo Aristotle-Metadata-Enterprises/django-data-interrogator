@@ -1,5 +1,6 @@
 from django.db.models import Aggregate, CharField, TextField
 from django.db.models import Case, Lookup, Sum, Q, When, Value
+from django.db.models.functions import Coalesce, Cast
 from django.db.models.expressions import Func
 from django.db.models.fields import DecimalField, Field, FloatField  # , RelatedField
 from django.db.models.fields.related import RelatedField, ForeignObject, ManyToManyField
@@ -28,18 +29,25 @@ class GroupConcat(Aggregate):
 
     def as_postgresql(self, compiler, connection):
         self.function = "STRING_AGG"
-        self.template = "%(function)s(%(distinct)s%(expressions)s %(ordering)s)"
+        self.template = "%(function)s(%(distinct)s%(expressions)s, ',')"
         return super().as_sql(compiler, connection)
 
 
-class ComplexLookup(GroupConcat):
-    def __init__(self, lookup_field, condition, lookup_value, output_field=TextField(), **lookups):
-        expression = Case(
-            When(**{lookup_field: condition, 'then': lookup_value}),
-            default=Value(""),
-            output_field = output_field
-        )
-        super().__init__(expression)
+def ComplexLookup(lookup_field, condition, lookup_value, output_field=TextField()):
+    expression = Coalesce(
+        GroupConcat(
+            Cast(
+                Case(
+                    When(**{lookup_field: condition, 'then': lookup_value}),
+                    default=Value(None),
+                    output_field=output_field
+                ),
+                output_field=TextField()
+            )
+        ),
+        Value("")
+    )
+    return expression
 
 
 class SumIf(Sum):
