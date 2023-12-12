@@ -46,4 +46,4 @@ jobs:
           pip install .
 
       - name: Run tests
-        run: PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
+        run: PYTHONPATH=.:./app:./app/shop DJANGO_SETTINGS_MODULE=app.settings django-admin test
