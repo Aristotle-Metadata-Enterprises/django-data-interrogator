@@ -164,10 +164,68 @@ Norm Scully                   99      Raymond Holt              6
 
 Behind the scenes the data interrogator converts text fields into a format that can be used within the django QuerySet API. In this example, dots (``.``) become double underscores (``__``) that allow a query to follow foreign keys. So in the above query the column ``precinct.number`` becomes ``precinct__number``, this can then be fed into the `values function in the django queryset API <https://docs.djangoproject.com/en/1.8/ref/models/querysets/#django.db.models.query.QuerySet.values>`. While 'dot notation' is used for simplicity regular django column names with underscores can be used.
 
-Generating counts, minimums and maximums
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Using aliases
+~~~~~~~~~~~~~
+
+Aliases can be set using the ``:=`` command to convert django field or column names into human readable names.
+For example a column definition across multiple columns can be shortened like so: ``Precinct:=officer.precinct.name``.
+
+Performing math expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Simple calculations can be performed within queries to calculate against two columns.
+For example, ``officer.age - officer.graduation.age_at_graduation`` would calculate the duration between an officers current age, and when they graduated.
+
+This can be used with an alias, like so: ``Years of service:=officer.age - officer.graduation.age_at_graduation``
+
+Current math functions allowed are addition (``+``), subtraction (``-``), multiplication (``*``) and division (``/``).
+
+
+Using aggregates to generating counts, minimums and maximums
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 A small number of `aggregate functions <https://docs.djangoproject.com/en/1.8/ref/models/querysets/#aggregate>`_ are available from the front end - currently ``Count()``, ``Max()`` and ``Min()``. Since these need to be set up in code, these need to be exectued using special syntax - that is just wrapping a column name in the aggregating command (like demonstrated above), with the argument ``count(arrests)``.
+
+Supported aggregates are:
+
+* ``min(column)``: Returns the minimum value in the associated column.
+* ``max(column)``: Returns the minimum value in the associated column.
+* ``sum(column)``: Returns the total added value of all entries in the associated column.
+* ``avg(column)``: Returns the mean average of the associated column.
+* ``count(column)``: Returns the total number of entries in the associated column.
+* ``substr(column, start_position, end_position)``: Returns a substring of entries in the column. Example: ``substr(name, 0, 5)`` returns the first 5 letters of each entry in a column
+* ``concat(column1, column2, ...)``: Returns a joined string of a number of columns. Static strings can be included in quotes. Example: ``concat(first_name, " ", last_name, ".")`` retuns a single column with a full name with a space in the middle and a period at the end.
+* ``group(column)``: Returns a string that contains all columns concatenated together. Example: `group(column)`
+* ``sumif(column)``: Returns a sum of all values that meet a condition in a column. Example: ``sumif(age, age>18)`` will get the total age for all people over 18
+* ``lookup(column)``: Returns a lookup for a column. See below:
+
+  Look ups allow for a pivot-table like extract of data from a matching joined. For example, if we have the arrests table above and want a list of officers, crimes they have arrested people for, and names of suspects the following query would provide this:
+
+  ``name, Grand Theft Auto:=lookup(arrest.crime,"Grand Theft Auto",arrest.suspect), Larceny:=lookup(arrest.crime,"Larceny",arrest.suspect)``
+
+  ================= ================ =====================
+     name           Grand Theft Auto Larceny
+  ================= ================ =====================
+  Jake Peralta       Mary Smith       Bob Andrews
+  Amy Santiago       John Rogers      Jeff Fakename
+  Roza Diaz          Walter Gower     Rob Ogdens
+  ================= ================ =====================
+
+
 
 Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be normalised in django to ``QuerySet.filter(name=F('perp_name'))``.
+
+
+Setting up a test environment
+=============================
+
+* ``cd dev``
+* ``docker-compose run dev bash``
+* ``django-admin [YOUR_COMMAND]``
+
+To play with data load the shops fixture
+
+* ``django-admin migrate``
+* ``django-admin loaddata data.json``

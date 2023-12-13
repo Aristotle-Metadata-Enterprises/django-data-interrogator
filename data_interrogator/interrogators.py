@@ -10,7 +10,7 @@ from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrap
 from django.db.models import functions as func
 
 from data_interrogator import exceptions as di_exceptions
-from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf
+from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf, ComplexLookup
 
 try:
     from garnett.expressions import L
@@ -121,6 +121,7 @@ class Interrogator:
         "group": GroupConcat,
         "concat": func.Concat,
         "sumif": SumIf,
+        "lookup": ComplexLookup,
     }
     errors = []
     report_models = Allowable.ALL_MODELS
@@ -264,7 +265,13 @@ class Interrogator:
 
     def get_annotation(self, column):
         agg, field = column.split('::', 1)
-        if agg == 'sumif':
+        if agg == 'lookup':
+            try:
+                field, cond, value = field.split(',', 2)
+            except:
+                raise di_exceptions.InvalidAnnotationError("Not enough arguments - must be 3")
+            annotation = self.available_aggregations[agg](field, cond, value)
+        elif agg == 'sumif':
             try:
                 field, cond = field.split(',', 1)
             except:
@@ -275,7 +282,7 @@ class Interrogator:
                 condition_key, condition_val = condition.split('=', 1)
                 conditions[normalise_field(condition_key)] = normalise_field(condition_val)
             annotation = self.available_aggregations[agg](field=field, **conditions)
-        elif agg == 'join':
+        elif agg == 'concat':
             fields = []
             for f in field.split(','):
                 if f.startswith(('"', "'")):
@@ -559,9 +566,7 @@ class Interrogator:
 
         except ValueError as e:
             rows = []
-            if limit is None:
-                errors.append("Limit must be a number")
-            elif limit < 1:
+            if limit and type(limit) is int and limit < 0:
                 errors.append("Limit must be a number greater than zero")
             else:
                 errors.append("Something went wrong - %s" % e)
@@ -577,6 +582,7 @@ class Interrogator:
                 errors.append("The requested field '%s' was not found in the database." % field)
             else:
                 errors.append("An error was found with your query:\n%s" % e)
+            raise e
         except Exception as e:
             rows = []
             errors.append("Something went wrong - %s" % e)

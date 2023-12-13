@@ -9,8 +9,11 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import dj_database_url
+from pathlib import Path
+
 import os,sys
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, BASE_DIR)
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -59,11 +62,11 @@ MIDDLEWARE = [
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'tmp.db',
-    }
+    "default": dj_database_url.config(
+        default="sqlite:///" + str(BASE_DIR / "tmp.db")
+    )
 }
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/

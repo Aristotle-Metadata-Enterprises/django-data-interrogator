@@ -41,8 +41,9 @@ jobs:
 
       - name: Install django
         run: |
-          pip install -q Django==3.1
+          pip install -q Django==4.2
+          pip install dj_database_url
           pip install .
 
       - name: Run tests
-        run: PYTHONPATH=. DJANGO_SETTINGS_MODULE=app.settings django-admin test
+        run: PYTHONPATH=.:./app:./app/shop DJANGO_SETTINGS_MODULE=app.settings django-admin test
