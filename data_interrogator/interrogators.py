@@ -1,16 +1,18 @@
 import re
 from datetime import timedelta
-from enum import Enum
 from typing import Union, Tuple, List
 
 from django.apps import apps
 from django.core import exceptions
 from django.conf import settings
-from django.db.models import F, Count, Min, Max, Sum, Value, Avg, ExpressionWrapper, DurationField, FloatField, Model, JSONField
+from django.db.models import Count, Min, Max, Sum, Value, Avg
+from django.db.models import ExpressionWrapper, DurationField, FloatField, Model, JSONField
 from django.db.models import functions as func
 
 from data_interrogator import exceptions as di_exceptions
-from data_interrogator.db import GroupConcat, DateDiff, ForceDate, SumIf, ComplexLookup
+from data_interrogator.aggregators import aggregate_register
+from data_interrogator.utils import normalise_field, normalise_math, Allowable
+
 
 try:
     from garnett.expressions import L
@@ -18,6 +20,7 @@ try:
     GARNETT_ENABLED = True
 except:
     GARNETT_ENABLED = False
+
 
 # Utility functions
 math_infix_symbols = {
@@ -52,9 +55,6 @@ def get_base_model(app_label: str, model: str) -> Model:
     return apps.get_model(app_label.lower(), model.lower())
 
 
-def normalise_field(text) -> str:
-    """Replace the UI access with the backend Django access"""
-    return text.strip().replace('(', '::').replace(')', '').replace(".", "__")
 
 
 def clean_lexp_key(key):
@@ -62,31 +62,6 @@ def clean_lexp_key(key):
         return key[len(LEXP):]
     return key
 
-
-def normalise_math(expression):
-    """Normalise math from UI """
-    if not any(s in expression for s in math_infix_symbols.keys()):
-        # we're aggregating some mathy things, these are tricky
-        return F(normalise_field(expression))
-
-    math_operator_re = '[\-\/\+\*]'
-
-    a, b = [v.strip() for v in re.split(math_operator_re, expression, 1)]
-    first_operator = re.findall(math_operator_re, expression)[0]
-
-    if first_operator == "-" and a.endswith('date') and b.endswith('date'):
-        expr = ExpressionWrapper(
-            DateDiff(
-                ForceDate(F(a)),
-                ForceDate(F(b))
-            ), output_field=DurationField()
-        )
-    else:
-        expr = ExpressionWrapper(
-            math_infix_symbols[first_operator](F(a), F(b)),
-            output_field=FloatField()
-        )
-    return expr
 
 
 def clean_filter(text: str) -> Union[str, Tuple[str, str, str]]:
@@ -104,25 +79,9 @@ def clean_filter(text: str) -> Union[str, Tuple[str, str, str]]:
     return text
 
 
-class Allowable(Enum):
-    ALL_APPS = 1
-    ALL_MODELS = 1
-    ALL_FIELDS = 3
-
 
 class Interrogator:
-    available_aggregations = {
-        "min": Min,
-        "max": Max,
-        "sum": Sum,
-        'avg': Avg,
-        "count": Count,
-        "substr": func.Substr,
-        "group": GroupConcat,
-        "concat": func.Concat,
-        "sumif": SumIf,
-        "lookup": ComplexLookup,
-    }
+    available_aggregations = aggregate_register
     errors = []
     report_models = Allowable.ALL_MODELS
 
@@ -265,39 +224,8 @@ class Interrogator:
 
     def get_annotation(self, column):
         agg, field = column.split('::', 1)
-        if agg == 'lookup':
-            try:
-                field, cond, value = field.split(',', 2)
-            except:
-                raise di_exceptions.InvalidAnnotationError("Not enough arguments - must be 3")
-            annotation = self.available_aggregations[agg](field, cond, value)
-        elif agg == 'sumif':
-            try:
-                field, cond = field.split(',', 1)
-            except:
-                raise di_exceptions.InvalidAnnotationError("SUMIF must have a condition")
-            field = normalise_math(field)
-            conditions = {}
-            for condition in cond.split(','):
-                condition_key, condition_val = condition.split('=', 1)
-                conditions[normalise_field(condition_key)] = normalise_field(condition_val)
-            annotation = self.available_aggregations[agg](field=field, **conditions)
-        elif agg == 'concat':
-            fields = []
-            for f in field.split(','):
-                if f.startswith(('"', "'")):
-                    # its a string!
-                    fields.append(Value(f.strip('"').strip("'")))
-                else:
-                    fields.append(f)
-            annotation = self.available_aggregations[agg](*fields)
-        elif agg == "substr":
-            field, i, j = (field.split(',') + [None])[0:3]
-            annotation = self.available_aggregations[agg](field, i, j)
-        else:
-            field = normalise_math(field)
-            annotation = self.available_aggregations[agg](field, distinct=False)
-        return annotation
+        return self.available_aggregations[agg].as_django(argument_string)
+
 
     def validate_report_model(self, base_model):
         app_label, model = base_model.split(':', 1)
