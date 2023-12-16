@@ -1,17 +1,17 @@
-import re
 from datetime import timedelta
 from typing import Union, Tuple, List
 
 from django.apps import apps
 from django.core import exceptions
 from django.conf import settings
-from django.db.models import Count, Min, Max, Sum, Value, Avg
-from django.db.models import ExpressionWrapper, DurationField, FloatField, Model, JSONField
+# from django.db.models import Count, Min, Max, Sum, Value, Avg
+from django.db.models import F, Model, JSONField
 from django.db.models import functions as func
 
 from data_interrogator import exceptions as di_exceptions
 from data_interrogator.aggregators import aggregate_register
-from data_interrogator.utils import normalise_field, normalise_math, Allowable
+from data_interrogator.utils import normalise_field, normalise_math, Allowable, is_math_expression
+
 
 
 try:
@@ -21,14 +21,6 @@ try:
 except:
     GARNETT_ENABLED = False
 
-
-# Utility functions
-math_infix_symbols = {
-    '-': lambda a, b: a - b,
-    '+': lambda a, b: a + b,
-    '/': lambda a, b: a / b,
-    '*': lambda a, b: a * b,
-}
 
 # Large unit multipliers to filter across
 BIG_MULTIPLIERS = {
@@ -223,8 +215,8 @@ class Interrogator:
         return {}
 
     def get_annotation(self, column):
-        agg, field = column.split('::', 1)
-        return self.available_aggregations[agg].as_django(argument_string)
+        agg, argument_string = column.split('::', 1)
+        return self.available_aggregations[agg]().as_django(argument_string)
 
 
     def validate_report_model(self, base_model):
@@ -408,8 +400,8 @@ class Interrogator:
             if column.startswith(tuple([a + '::' for a in self.available_aggregations.keys()])):
                 annotations[var_name] = self.get_annotation(column)
 
-            elif any(s in column for s in math_infix_symbols.keys()):
-                annotations[var_name] = self.normalise_math(column)
+            elif is_math_expression(column):
+                annotations[var_name] = normalise_math(column)
                 expression_columns.append(var_name)
             else:
                 if column in wrap_sheets.keys():

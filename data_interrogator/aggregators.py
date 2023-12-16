@@ -19,6 +19,7 @@ def register_aggregator(Aggregate):
 
 class InterrogatorFunction:
     def process_arguments(self, argument_string):
+        argument_string = normalise_math(argument_string)
         return [argument_string], {"distinct": False}
 
     def as_django(self, argument_string):
@@ -41,7 +42,7 @@ class Min(InterrogatorFunction):
 
 @register_aggregator
 class Sum(InterrogatorFunction):
-    command = "Sum"
+    command = "sum"
     aggregator = django.db.models.Sum
 
 
@@ -98,19 +99,20 @@ class Concat(InterrogatorFunction):
 @register_aggregator
 class SumIf(InterrogatorFunction):
     command = "sumif"
-    aggregator = django.db.models.functions.Substr
+    aggregator = SumIf
 
     def process_arguments(self, argument_string):
-            try:
-                field, cond = field.split(',', 1)
-            except:
-                raise di_exceptions.InvalidAnnotationError("SUMIF must have a condition")
-            field = normalise_math(field)
-            conditions = {}
-            for condition in cond.split(','):
-                condition_key, condition_val = condition.split('=', 1)
-                conditions[normalise_field(condition_key)] = normalise_field(condition_val)
-            return [field], conditions
+        field = argument_string
+        try:
+            field, cond = field.split(',', 1)
+        except:
+            raise di_exceptions.InvalidAnnotationError("SUMIF must have a condition")
+        field = normalise_math(field)
+        conditions = {}
+        for condition in cond.split(','):
+            condition_key, condition_val = condition.split('=', 1)
+            conditions[normalise_field(condition_key)] = normalise_field(condition_val)
+        return [field], conditions
 
 
 

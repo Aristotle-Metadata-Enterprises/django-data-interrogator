@@ -1,10 +1,11 @@
 """A collection of useful functions that didn't really belong anywhere else"""
+import re
 from enum import Enum
 from typing import Tuple, Union
 
 from django.apps import apps
 from django.conf import settings
-from django.db.models import Model
+from django.db.models import DurationField, ExpressionWrapper, F, FloatField, Model
 
 from data_interrogator.db import DateDiff, ForceDate
 
@@ -12,6 +13,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 logger.debug(f"Logging started for {__name__}")
+
+
+# Utility functions
+math_infix_symbols = {
+    '-': lambda a, b: a - b,
+    '+': lambda a, b: a + b,
+    '/': lambda a, b: a / b,
+    '*': lambda a, b: a * b,
+}
 
 
 class Allowable(Enum):
@@ -26,9 +36,13 @@ def normalise_field(text) -> str:
     return text.strip().replace('(', '::').replace(')', '').replace(".", "__")
 
 
+def is_math_expression(expression):
+    return any(s in expression for s in math_infix_symbols.keys())
+
+
 def normalise_math(expression):
     """Normalise math from UI """
-    if not any(s in expression for s in math_infix_symbols.keys()):
+    if not is_math_expression(expression):
         # we're aggregating some mathy things, these are tricky
         return F(normalise_field(expression))
 
