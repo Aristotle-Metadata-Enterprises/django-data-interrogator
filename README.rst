@@ -212,6 +212,16 @@ Supported aggregates are:
   ================= ================ =====================
 
 
+Adding custom functions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``aggregators.py`` file provides the ``InterrogatorFunction`` which can be used to transform an argument string into a django expression.
+Each ``InterrogatorFunction`` has the following:
+
+* ``command``: Class property that defines the name of the function in the user interface. eg. ``command = "my_func"`` will expose a ``my_func`` function to users in the UI.
+* ``aggregator``: Class property that defines the django expression used in the function.
+* ``process_arguments(self, argument_string)``: Instance method that converts the string to arguments (``args`` and ``kwargs``) for the ``aggregator`` expression.
+
 
 Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

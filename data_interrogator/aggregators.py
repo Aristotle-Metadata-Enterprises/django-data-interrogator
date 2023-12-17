@@ -74,6 +74,9 @@ class Substr(InterrogatorFunction):
     aggregator = django.db.models.functions.Substr
 
     def process_arguments(self, argument_string):
+        # This will ensure we have array of exactly 3 items.
+        #   If there are 2, the appended None will be incldued - this is a substring of starting pos to the end.
+        #   If there are 3, this is a substring of starting pos to the end position.
         field, start_pos, end_pos = (field.split(',') + [None])[0:3]
         return [field, start_pos, end_pos], {}
 
