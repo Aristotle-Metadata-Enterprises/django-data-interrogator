@@ -1,15 +1,69 @@
 """A collection of useful functions that didn't really belong anywhere else"""
-from data_interrogator.interrogators import Allowable
-from django.conf import settings
+import re
+from enum import Enum
+from typing import Tuple, Union
 
 from django.apps import apps
-from django.db.models import Model
+from django.conf import settings
+from django.db.models import DurationField, ExpressionWrapper, F, FloatField, Model
 
-from typing import Tuple, Union
+from data_interrogator.db import DateDiff, ForceDate
+
 import logging
 
 logger = logging.getLogger(__name__)
 logger.debug(f"Logging started for {__name__}")
+
+
+# Utility functions
+math_infix_symbols = {
+    '-': lambda a, b: a - b,
+    '+': lambda a, b: a + b,
+    '/': lambda a, b: a / b,
+    '*': lambda a, b: a * b,
+}
+
+
+class Allowable(Enum):
+    ALL_APPS = 1
+    ALL_MODELS = 1
+    ALL_FIELDS = 3
+
+
+
+def normalise_field(text) -> str:
+    """Replace the UI access with the backend Django access"""
+    return text.strip().replace('(', '::').replace(')', '').replace(".", "__")
+
+
+def is_math_expression(expression):
+    return any(s in expression for s in math_infix_symbols.keys())
+
+
+def normalise_math(expression):
+    """Normalise math from UI """
+    if not is_math_expression(expression):
+        # we're aggregating some mathy things, these are tricky
+        return F(normalise_field(expression))
+
+    math_operator_re = '[\-\/\+\*]'
+
+    a, b = [v.strip() for v in re.split(math_operator_re, expression, 1)]
+    first_operator = re.findall(math_operator_re, expression)[0]
+
+    if first_operator == "-" and a.endswith('date') and b.endswith('date'):
+        expr = ExpressionWrapper(
+            DateDiff(
+                ForceDate(F(a)),
+                ForceDate(F(b))
+            ), output_field=DurationField()
+        )
+    else:
+        expr = ExpressionWrapper(
+            math_infix_symbols[first_operator](F(a), F(b)),
+            output_field=FloatField()
+        )
+    return expr
 
 
 def get_human_readable_model_name(model: Model) -> str:

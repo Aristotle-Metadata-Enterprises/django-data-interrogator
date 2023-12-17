@@ -12,3 +12,10 @@ class ModelNotAllowedException(Exception):
 
 class InvalidAnnotationError(Exception):
     pass
+
+class DuplicateAnnotationCommand(Exception):
+    def __init__(self, aggregate, other_aggregate):
+        self.message = (
+            f'DuplicateAnnotationCommand - The registered aggregate {aggregate} uses a duplicate command {aggregate.command}. '
+            f'This is already defined for {other_aggregate}'
+        )
