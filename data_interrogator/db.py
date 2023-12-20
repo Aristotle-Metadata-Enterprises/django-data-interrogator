@@ -33,8 +33,14 @@ class GroupConcat(Aggregate):
         return super().as_sql(compiler, connection)
 
 
-def ComplexLookup(lookup_field, condition, lookup_value, output_field=TextField()):
-    expression = Coalesce(
+class ComplexLookup(Func):
+    """Wrap custom Django SQL in a `Func` so we can treat ComplexLookup the same as other DB functions"""
+    function = ''
+    template = "%(expressions)s"
+    arity = 1
+
+    def __init__(self, lookup_field, condition, lookup_value, output_field=TextField(), **extra):
+        self.__expression = expression = Coalesce(
         GroupConcat(
             Cast(
                 Case(
@@ -46,8 +52,8 @@ def ComplexLookup(lookup_field, condition, lookup_value, output_field=TextField(
             )
         ),
         Value("")
-    )
-    return expression
+        )
+        super().__init__(expression, **extra)
 
 
 class SumIf(Sum):
@@ -64,7 +70,7 @@ class SumIf(Sum):
         case = Case(
             When(
                 condition, then=field
-                ), 
+                ),
                 default=0,
                 output_field=output_field
                 )
