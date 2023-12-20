@@ -1,4 +1,4 @@
-import django.db.models
+import django.db.models 
 import django.db.models.functions
 from django.db.models import functions as func
 from django.db.models import Count, Min, Max, Sum, Value, Avg
@@ -77,7 +77,7 @@ class Substr(InterrogatorFunction):
         # This will ensure we have array of exactly 3 items.
         #   If there are 2, the appended None will be incldued - this is a substring of starting pos to the end.
         #   If there are 3, this is a substring of starting pos to the end position.
-        field, start_pos, end_pos = (argument_string.split(',') + [None])[0:3]
+        field, start_pos, end_pos = (field.split(',') + [None])[0:3]
         return [field, start_pos, end_pos], {}
 
 
@@ -126,7 +126,7 @@ class ComplexLookup(InterrogatorFunction):
 
     def process_arguments(self, argument_string):
         try:
-            field, cond, value = argument_string.split(',', 2)
+            field, cond, value = field.split(',', 2)
         except:
             raise di_exceptions.InvalidAnnotationError("Not enough arguments - must be 3")
         return [field, cond, value], {}
