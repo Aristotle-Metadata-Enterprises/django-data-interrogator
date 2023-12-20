@@ -40,7 +40,7 @@ class ComplexLookup(Func):
     arity = 1
 
     def __init__(self, lookup_field, condition, lookup_value, output_field=TextField(), **extra):
-        self.__expression = expression = Coalesce(
+        expression = Coalesce(
         GroupConcat(
             Cast(
                 Case(
