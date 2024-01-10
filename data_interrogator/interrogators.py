@@ -196,7 +196,7 @@ class Interrogator:
         """Return whether a forbidden field exists in the query"""
         if not GARNETT_ENABLED:
             return False
-        
+
         checking_model = self.base_model
 
         joins = list(enumerate(column.split('__')))
@@ -502,14 +502,13 @@ class Interrogator:
                 errors.append("The requested field '%s' was not found in the database." % field)
             else:
                 errors.append("An error was found with your query:\n%s" % e)
-            raise e
         except Exception as e:
             rows = []
             errors.append("Something went wrong - %s" % e)
 
         return {
             'rows': rows, 'count': count, 'columns': output_columns, 'errors': errors,
-            'base_model': base_model_data, 
+            'base_model': base_model_data,
             # 'query': query # DEBUG Tool
         }
 

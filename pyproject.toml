@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-data-interrogator"
-version = "0.3.3"
+version = "0.3.4"
 description = "A suite of interactive table builder utilities that create reports using efficient SQL queries"
 authors = ["Aristotle Metadata Enterprises"]
 license = "BSD-3-Clause"
