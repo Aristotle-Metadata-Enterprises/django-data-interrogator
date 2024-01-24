@@ -244,3 +244,42 @@ To play with data load the shops fixture
 To run the development server
 
 * ``python manage.py runserver 0.0.0.0:8001``
+
+
+Settings up a development environment in VS Code
+================================================
+
+* ``pipenv install django dj-database-url``
+* ``pipenv shell`` to drop into the virtual environment
+* ``PYTHONPATH=./app DJANGO_SETTINGS_MODULE=app.settings python3 manage.py runserver 0.0.0.0:9000`` to run the development server.
+* In VS Code, select the Python interpreter from the virtual environment: 
+    * Ctrl-Shift-P - Open the command selector
+    * 'Python: Select interpreter': Select the one with the `django-data-interrogator` prefix.
+* In VS Code, edit the project's ``launch.json`` and add the following entry:
+
+    {
+        // Use IntelliSense to learn about possible attributes.
+        // Hover to view descriptions of existing attributes.
+        // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python: Django",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/manage.py",
+                "args": [
+                    "runserver"
+                    "0.0.0.0:9000"
+                ],
+                "env": {
+                    "PYTHONPATH": "./app",
+                    "DJANGO_SETTINGS_MODULE": "app.settings"
+                },
+                "django": true,
+                "justMyCode": true
+            }
+        ]
+    }
+
+* Press F5 to launch and debug.
