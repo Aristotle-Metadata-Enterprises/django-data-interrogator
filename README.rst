@@ -232,10 +232,15 @@ Setting up a test environment
 =============================
 
 * ``cd dev``
-* ``docker-compose run dev bash``
+* ``docker-compose up -d``
+* ``docker-compose exec dev bash``
 * ``django-admin [YOUR_COMMAND]``
 
 To play with data load the shops fixture
 
 * ``django-admin migrate``
 * ``django-admin loaddata data.json``
+
+To run the development server
+
+* ``python manage.py runserver 0.0.0.0:8001``
