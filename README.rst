@@ -227,15 +227,62 @@ Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be normalised in django to ``QuerySet.filter(name=F('perp_name'))``.
 
+To look up a field in the list of values, we can use ``in``, which will be normalised to Django's ``__in`` filter. For example you would like to look for officers with precinct numbers 98 or 99. It's achievable with ``precinct.number in 98,99`` filter which normalised to django like ``Precinct.objects.filter(number__in=[98,99])`` 
+
+To exclude values from the search we could use ``not in`` which will be normalised to django ``.exclude()`` filter. For example you would like to look for officers with captians other than captain 'Raymond Holt' or 'Brad Prechet', So we use: ``precinct.captain.name not in Raymond Holt,Brad Prechet`` filter which normalised to django ``Precinct.objects.exclude(captain__name__in=[Raymond Holt,Brad Prechet])``
 
 Setting up a test environment
 =============================
 
 * ``cd dev``
-* ``docker-compose run dev bash``
+* ``docker-compose up -d``
+* ``docker-compose exec dev bash``
 * ``django-admin [YOUR_COMMAND]``
 
 To play with data load the shops fixture
 
 * ``django-admin migrate``
 * ``django-admin loaddata data.json``
+
+To run the development server
+
+* ``python manage.py runserver 0.0.0.0:8001``
+
+
+Settings up a development environment in VS Code
+================================================
+
+* ``pipenv install django dj-database-url``
+* ``pipenv shell`` to drop into the virtual environment
+* ``PYTHONPATH=./app DJANGO_SETTINGS_MODULE=app.settings python3 manage.py runserver 0.0.0.0:9000`` to run the development server.
+* In VS Code, select the Python interpreter from the virtual environment: 
+    * Ctrl-Shift-P - Open the command selector
+    * 'Python: Select interpreter': Select the one with the `django-data-interrogator` prefix.
+* In VS Code, edit the project's ``launch.json`` and add the following entry:
+
+    {
+        // Use IntelliSense to learn about possible attributes.
+        // Hover to view descriptions of existing attributes.
+        // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python: Django",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/manage.py",
+                "args": [
+                    "runserver"
+                    "0.0.0.0:9000"
+                ],
+                "env": {
+                    "PYTHONPATH": "./app",
+                    "DJANGO_SETTINGS_MODULE": "app.settings"
+                },
+                "django": true,
+                "justMyCode": true
+            }
+        ]
+    }
+
+* Press F5 to launch and debug.

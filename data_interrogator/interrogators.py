@@ -58,9 +58,11 @@ def clean_lexp_key(key):
 
 def clean_filter(text: str) -> Union[str, Tuple[str, str, str]]:
     """Return the (cleaned) filter for replacement"""
+    # The order of 'not in' and 'in' operators is important
     maps = [
         ('<>', 'ne'), ('<=', 'lte'), ('<', 'lt'), ('>=', 'gte'), ('>', 'gt'), ('=', ''),
         ('&contains', 'contains'), ('&icontains', 'icontains'),
+        ('not in', 'in!'), ('in', 'in')
     ]
     for interrogator_filter, django_filter in maps:
         candidate = text.split(interrogator_filter)
