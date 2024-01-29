@@ -227,6 +227,9 @@ Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be normalised in django to ``QuerySet.filter(name=F('perp_name'))``.
 
+To look up a field in the list of values, we can use ``in``, which will be normalised to Django's ``__in`` filter. For example you would like to look for officers with precinct numbers 98 or 99. It's achievable with ``precinct.number in 98,99`` filter which normalised to django like ``Precinct.objects.filter(number__in=[98,99])`` 
+
+To exclude values from the search we could use ``not in`` which will be normalised to django ``.exclude()`` filter. For example you would like to look for officers with captians other than captain 'Raymond Holt' or 'Brad Prechet', So we use: ``precinct.captain.name not in Raymond Holt,Brad Prechet`` filter which normalised to django ``Precinct.objects.exclude(captain__name__in=[Raymond Holt,Brad Prechet])``
 
 Setting up a test environment
 =============================
