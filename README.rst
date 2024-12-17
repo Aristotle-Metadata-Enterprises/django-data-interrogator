@@ -223,6 +223,29 @@ Each ``InterrogatorFunction`` has the following:
 * ``process_arguments(self, argument_string)``: Instance method that converts the string to arguments (``args`` and ``kwargs``) for the ``aggregator`` expression.
 
 
+Filtering data
+~~~~~~~~~~~~~~
+
+To refine data, filters can be used to reduce the resulting data.
+The following filters are currently supported, but may not work for all data types.
+
+Filters are written with a field or column name, a filter type, and an argument without any quotes.
+
+  ================= ==================== ==================================================================================== ===========================
+   filter            Django Equivalent    Description                                                                          Example
+  ================= ==================== ==================================================================================== ===========================
+   =                  (blank)             Equal to                                                                             ``name = sam``
+   <>                 ne                  Not equal to                                                                         ``name <> bob``
+   <                  lt                  Less than                                                                            ``age < 30``
+   >                  gt                  Greater than                                                                         ``age > 30``
+   <=                 lte                 Less than or equal to                                                                ``date >= 2024-01-01``
+   >=                 gte                 Greater than or equal to                                                             ``date <= 2024-01-01``
+   &contains          contains            Contains the exact matching text                                                     ``name &contains Fred``
+   &icontains         icontains           Contains the text in any case (matches both UPPER or lower case text)                ``name &icontains fred``
+   in                 in                  Value is in a list (the argument must be a comma separated list, eg ``1,2,3``)       ``name in sam,bob,fred``
+  ================= ==================== ==================================================================================== ===========================
+
+
 Cross-table comparisons in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Most django queries in filters match a field with a given string, however there are cases where you would like to compare values between columns. These can be achieved by using ``F()`` statements in django. A user can specify that a filter should compare columns with an ``F()`` statement by using a ``double equals`` in the filter. If for example, we wanted to see a list of officers *who had also been arrested* we could do this by filtering with ``name==arrest.perp_name`` which would be normalised in django to ``QuerySet.filter(name=F('perp_name'))``.
