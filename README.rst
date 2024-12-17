@@ -227,7 +227,7 @@ Filtering data
 ~~~~~~~~~~~~~~
 
 To refine data, filters can be used to reduce the resulting data.
-The current filters are currently supported, but may not work for all data types.
+The following filters are currently supported, but may not work for all data types.
 
 Filters are written with a field or column name, a filter type, and an argument without any quotes.
 
