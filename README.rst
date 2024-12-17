@@ -231,19 +231,19 @@ The current filters are currently supported, but may not work for all data types
 
 Filters are written with a field or column name, a filter type, and an argument without any quotes.
 
-  ================= ==================== ==================================================================================== =====================
+  ================= ==================== ==================================================================================== ===========================
    filter            Django Equivalent    Description                                                                          Example
-  ================= ==================== ==================================================================================== =====================
-   =                  (blank)             Equal to                                                                             name = sam
-   <>                 ne                  Not equal to                                                                         name <> bob
-   <                  lt                  Less than                                                                            age < 30
-   >                  gt                  Greater than                                                                         age > 30
-   <=                 lte                 Less than or equal to                                                                date >= 2024-01-01
-   >=                 gte                 Greater than or equal to                                                             date <= 2024-01-01
-   &contains          contains            Contains the exact matching text                                                     name &contains Fred
-   &icontains         icontains           Contains the text in any case (matches both UPPER or lower case text)                name &icontains fred
-   in                 in                  Value is in a list (the argument should be a comma separated list, eg `1,2,3`)       name in sam,bob,fred
-  ================= ==================== ====================================================================================  =====================
+  ================= ==================== ==================================================================================== ===========================
+   =                  (blank)             Equal to                                                                             ``name = sam``
+   <>                 ne                  Not equal to                                                                         ``name <> bob``
+   <                  lt                  Less than                                                                            ``age < 30``
+   >                  gt                  Greater than                                                                         ``age > 30``
+   <=                 lte                 Less than or equal to                                                                ``date >= 2024-01-01``
+   >=                 gte                 Greater than or equal to                                                             ``date <= 2024-01-01``
+   &contains          contains            Contains the exact matching text                                                     ``name &contains Fred``
+   &icontains         icontains           Contains the text in any case (matches both UPPER or lower case text)                ``name &icontains fred``
+   in                 in                  Value is in a list (the argument must be a comma separated list, eg ``1,2,3``)     ``name in sam,bob,fred``
+  ================= ==================== ==================================================================================== ===========================
 
 
 Cross-table comparisons in filters
