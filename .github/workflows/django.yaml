@@ -14,10 +14,10 @@ jobs:
     steps:
       - name: Checkout PR
         uses: actions/checkout@v2
-      - name: Setup Python 3.8
+      - name: Setup Python 3.12
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.12
       - name: Install flake8
         run: pip install flake8
       - name: Lint
@@ -31,10 +31,10 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v2
 
-      - name: Setup Python 3.8
+      - name: Setup Python 3.12
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.12
 
       - name: Install pip
         run: pip install -U setuptools pip
