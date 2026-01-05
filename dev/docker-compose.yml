@@ -17,7 +17,7 @@ services:
       context: ..
       dockerfile: ./dev/Dockerfile
     environment:
-      - PYTHONPATH=.:./app:./app/shop
+      - PYTHONPATH=.:./app:./app/shop:/usr/src/app/tests/
       - DJANGO_SETTINGS_MODULE=app.settings
       - DATABASE_URL=postgres://postgres:changeme@postgres_db:5432/postgres
     # env_file:
